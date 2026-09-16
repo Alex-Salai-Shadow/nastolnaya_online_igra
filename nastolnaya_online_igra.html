@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Путешествие в сказку. У камня на распутье</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ДИЗАЙН-ТОКЕНЫ
+   Фон стола сейчас собран из CSS-градиентов — approximation
+   присланного Сашкой фото (тёмное дерево, золотая резьба, глянец,
+   ambient-свечение зелёный/янтарный/красный по краям). Чтобы
+   поставить реальное фото вместо approximation — положи файл рядом
+   с этим igra.html и раскомментируй правило .use-real-photo body
+   в самом низу этого блока стилей (или просто пришли файл — заменю).
+   ============================================================ */
+:root{
+  --bg-deep:#0a0d12;
+  --glow-green:#3ab486;
+  --glow-amber:#e3a944;
+  --glow-red:#cf5a52;
+  --wood-dark:#241609;
+  --wood-mid:#432a14;
+  --wood-light:#6e451f;
+  --gold:#e2bd6c;
+  --gold-dim:#9a7a3c;
+
+  --glass-bg: rgba(255,255,255,0.10);
+  --glass-bg-strong: rgba(255,255,255,0.16);
+  --glass-border: rgba(255,255,255,0.38);
+  --glass-highlight: rgba(255,255,255,0.55);
+  --glass-shadow: rgba(0,0,0,0.45);
+
+  --ink:#f7f4ec;
+  --ink-dim:#cfd6de;
+  --ink-faint:#93a0ad;
+
+  --accent-grad: linear-gradient(120deg, var(--glow-green), var(--glow-amber), var(--glow-red));
+  --accent-grad-soft: linear-gradient(120deg, rgba(58,180,134,.55), rgba(227,169,68,.55), rgba(207,90,82,.55));
+
+  --good:#5fd68f;
+  --bad:#e6716a;
+  --warn:#e3a944;
+
+  --r-lg:26px;
+  --r-md:18px;
+  --r-sm:12px;
+  --r-xs:8px;
+
+  --display:'Fraunces', Georgia, 'Times New Roman', serif;
+  --body:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, Consolas, monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  background:var(--bg-deep);
+  color:var(--ink);
+  font-family:var(--body);
+  overflow:hidden;
+  overscroll-behavior:none;
+  -webkit-user-select:none; user-select:none;
+}
+button, input, select{ font-family:inherit; }
+button{ cursor:pointer; }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.18); border-radius:8px; }
+
+/* ---------- liquid glass primitive ---------- */
+.glass{
+  background:var(--glass-bg);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid var(--glass-border);
+  border-radius:var(--r-md);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.25) inset,
+    0 -1px 12px rgba(255,255,255,.06) inset,
+    0 14px 34px var(--glass-shadow);
+}
+.glass-strong{ background:var(--glass-bg-strong); }
+button.glass-btn{
+  background:var(--glass-bg);
+  backdrop-filter:blur(14px) saturate(150%);
+  -webkit-backdrop-filter:blur(14px) saturate(150%);
+  border:1px solid var(--glass-border);
+  border-radius:999px;
+  color:var(--ink);
+  padding:12px 22px;
+  font-weight:600;
+  font-size:16px;
+  letter-spacing:.01em;
+  transition:transform .15s ease, box-shadow .15s ease, background .2s ease;
+  box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 8px 20px rgba(0,0,0,.35);
+}
+button.glass-btn:hover{ transform:translateY(-1px); background:var(--glass-bg-strong); }
+button.glass-btn:active{ transform:translateY(0); }
+button.glass-btn:disabled{ opacity:.35; cursor:not-allowed; transform:none; }
+button.glass-btn.primary{
+  background:var(--accent-grad-soft);
+  border-color:rgba(255,255,255,.5);
+  color:#171310;
+  font-weight:700;
+}
+button.glass-btn.primary:hover{ filter:brightness(1.07); }
+button.glass-btn.ghost{ background:rgba(255,255,255,.04); }
+button.glass-btn.danger{ border-color:rgba(230,113,106,.6); color:#ffd9d6; }
+button.icon-btn{
+  width:44px;height:44px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--glass-bg); border:1px solid var(--glass-border); color:var(--ink);
+  box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 6px 16px rgba(0,0,0,.3);
+}
+button.icon-btn:hover{ background:var(--glass-bg-strong); }
+
+/* ============================================================
+   СЦЕНА: фиксированный холст 1920x1080, масштабируется целиком
+   ============================================================ */
+.stage-outer{
+  position:fixed; inset:0;
+  width:100vw; height:100vh;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 900px 700px at 8% 45%, rgba(58,180,134,.30), transparent 60%),
+    radial-gradient(ellipse 1000px 800px at 50% 8%, rgba(227,169,68,.24), transparent 60%),
+    radial-gradient(ellipse 900px 700px at 94% 55%, rgba(207,90,82,.28), transparent 60%),
+    var(--bg-deep);
+}
+.stage{
+  position:absolute; top:0; left:0;
+  width:1920px; height:1080px;
+  transform-origin:top left;
+}
+
+/* wood table surface, CSS-approximation of the real photo */
+.table-surface{
+  position:absolute; left:50%; top:53.5%;
+  width:1180px; height:640px;
+  transform:translate(-50%,-50%);
+  border-radius:44%;
+  background:
+    radial-gradient(ellipse at 30% 22%, rgba(255,255,255,.16), transparent 42%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(226,189,108,.05) 0 2px, transparent 2px 5px),
+    radial-gradient(ellipse at 50% 50%, var(--wood-light) 0%, var(--wood-mid) 52%, var(--wood-dark) 100%);
+  border:16px solid;
+  border-image: linear-gradient(120deg, var(--gold-dim), var(--gold), var(--gold-dim), var(--gold)) 1;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.5),
+    inset 0 0 90px rgba(0,0,0,.55),
+    inset 0 2px 0 rgba(255,255,255,.18),
+    0 40px 90px rgba(0,0,0,.55);
+}
+.table-surface::before{
+  content:"";
+  position:absolute; inset:22px;
+  border-radius:40%;
+  border:2px solid rgba(226,189,108,.35);
+  pointer-events:none;
+}
+
+/* ============================================================
+   ЭКРАНЫ ВНЕ СТОЛА (меню, мастер, списки) — оверлей поверх сцены
+   ============================================================ */
+.screen{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  padding:40px;
+}
+.screen[hidden]{ display:none; }
+
+.menu-card{
+  width:920px; max-width:92vw;
+  padding:56px 60px;
+  text-align:center;
+}
+.brand-title{
+  font-family:var(--display); font-weight:700;
+  font-size:52px; letter-spacing:.01em; margin:0 0 6px;
+  background:var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.brand-sub{
+  font-family:var(--display); font-size:22px; color:var(--ink-dim); margin:0 0 40px; font-weight:500;
+}
+.menu-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.menu-tile{
+  padding:30px 18px; border-radius:var(--r-lg); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  transition:transform .18s ease, background .2s ease;
+}
+.menu-tile:hover{ transform:translateY(-3px); background:var(--glass-bg-strong); }
+.menu-tile .ico{ font-size:34px; }
+.menu-tile .lbl{ font-weight:700; font-size:16px; }
+.menu-tile .sub{ font-size:12.5px; color:var(--ink-faint); }
+
+.panel-card{
+  width:980px; max-width:94vw; max-height:88vh;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px 28px; border-bottom:1px solid rgba(255,255,255,.14);
+}
+.panel-head h2{ font-family:var(--display); font-size:26px; margin:0; font-weight:600; }
+.panel-body{ padding:24px 28px; overflow-y:auto; }
+.panel-foot{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:18px 28px; border-top:1px solid rgba(255,255,255,.14);
+}
+
+.field-row{ display:flex; flex-direction:column; gap:8px; margin-bottom:18px; text-align:left; }
+.field-row label{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); }
+.field-row input[type=text], .field-row input[type=number]{
+  background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.22); border-radius:var(--r-sm);
+  color:var(--ink); padding:11px 14px; font-size:15px; outline:none;
+}
+.field-row input:focus{ border-color:var(--gold); }
+.stepper-row{ display:flex; align-items:center; gap:14px; }
+.stepper-row input[type=range]{ flex:1; accent-color:var(--glow-amber); }
+.stepper-row .n{ font-family:var(--mono); font-size:22px; min-width:2.6ch; text-align:center; }
+
+.team-form-list{ display:flex; flex-direction:column; gap:10px; text-align:left; }
+.team-form-row{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:var(--r-sm); background:rgba(255,255,255,.05);
+}
+.team-form-row .avatar-pick{
+  position:relative;
+  width:46px;height:46px;border-radius:50%;flex:none; overflow:hidden;
+  background:linear-gradient(135deg,#5a4324,#8a6c37); border:1px solid var(--gold-dim);
+  display:flex;align-items:center;justify-content:center; font-weight:700; color:#2c2110; font-family:var(--display);
+  background-size:cover; background-position:center; cursor:pointer;
+}
+.team-form-row .avatar-pick .avatar-hint{
+  position:absolute; inset:0; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(10,13,18,.62); font-size:15px; opacity:0; transition:opacity .15s ease;
+  pointer-events:none;
+}
+.team-form-row .avatar-pick:hover .avatar-hint{ opacity:1; }
+.team-form-row input[type=text]{
+  flex:1; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.22); border-radius:var(--r-sm);
+  color:var(--ink); padding:10px 12px; font-size:14.5px; outline:none;
+}
+.team-form-row input[type=text]:focus{ border-color:var(--gold); }
+
+.list-rows{ display:flex; flex-direction:column; gap:10px; text-align:left; }
+.list-row{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:14px 16px; border-radius:var(--r-sm); background:rgba(255,255,255,.05);
+}
+.list-row:hover{ background:rgba(255,255,255,.09); }
+.list-row .meta{ font-size:12.5px; color:var(--ink-faint); }
+.empty-note{ color:var(--ink-faint); font-size:14px; padding:30px 0; text-align:center; }
+
+/* ============================================================
+   ВЕРХНЯЯ ПАНЕЛЬ ИГРЫ
+   ============================================================ */
+.top-bar{
+  position:absolute; top:26px; left:50%; transform:translateX(-50%);
+  width:1720px; z-index:35;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 20px;
+}
+.top-bar .game-title{
+  font-family:var(--display); font-size:20px; font-weight:600; color:var(--ink);
+}
+.top-bar .game-timer{
+  font-size:13px; color:var(--ink-dim); display:flex; align-items:center; gap:8px;
+  padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.06);
+}
+.top-bar .game-timer b{ font-family:var(--mono); font-size:15px; color:var(--ink); font-weight:700; letter-spacing:.02em; }
+.top-bar .top-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+button.topbar-btn{ padding:9px 16px; font-size:13.5px; }
+
+/* ============================================================
+   КОЛЬЦО КОМАНД
+   ============================================================ */
+.team{
+  position:absolute; left:50%; top:53.5%; z-index:5;
+  transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 10px 10px; gap:6px;
+  transition:width .3s ease, height .3s ease, padding .3s ease, box-shadow .3s ease;
+}
+.team.full{ width:186px; }
+.team.compact{ width:156px; padding:10px 8px 8px; gap:5px; }
+
+.team .avatar{
+  border-radius:50%; flex:none; position:relative; overflow:hidden;
+  background:linear-gradient(135deg,#6b5128,#9a7a3c);
+  border:2px solid rgba(226,189,108,.7);
+  background-size:cover; background-position:center;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display); font-weight:700; color:#241609;
+}
+.team.full .avatar{ width:58px;height:58px;font-size:19px; }
+.team.compact .avatar{ width:44px;height:44px;font-size:15px; }
+.team .avatar .avatar-hint{
+  position:absolute; inset:0; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(10,13,18,.62); font-size:16px; opacity:0; transition:opacity .15s ease;
+  pointer-events:none;
+}
+.team.compact .avatar .avatar-hint{ font-size:13px; }
+.team .avatar:hover .avatar-hint{ opacity:1; }
+
+.team .name{
+  font-weight:700; text-align:center; line-height:1.15; max-width:100%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:text;
+  text-transform:uppercase; letter-spacing:.02em;
+}
+.team.full .name{ font-size:16px; }
+.team.compact .name{ font-size:13.5px; }
+
+/* деловой вид карточки: тонкий разделитель между «личным» блоком (фото+имя)
+   и «статусным» (баллы/серия) — вместо текста, наляпанного друг на друга */
+.team .card-divider{ width:64%; height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent); flex:none; }
+
+/* баллы — «бабл»-бейдж, а не голый текст на фоне стола; шрифт — Inter, строгий
+   гротеск с однозначным начертанием цифр (в отличие от декоративного Fraunces,
+   где «6» на бледном экране могла читаться как «8» — правка Сашки) */
+.team .pts-chip{
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.3); border:1px solid rgba(226,189,108,.4);
+  border-radius:999px; padding:3px 13px;
+}
+.team .pts{ font-family:var(--body); font-variant-numeric:tabular-nums lining-nums; color:#ffdf8a; font-weight:800; letter-spacing:.01em; }
+.team.full .pts-chip{ padding:4px 14px; }
+.team.full .pts{ font-size:17px; }
+.team.compact .pts{ font-size:14.5px; }
+/* прибавка баллов показывается прямо в поле баллов карточки (а не отдельным
+   всплывающим окном) — так уведомления соседних карточек никогда не наезжают
+   друг на друга; висит 10 сек, затем поле возвращается к обычному виду */
+.pts-delta{
+  display:inline-block; margin-left:5px; padding:1px 6px; border-radius:999px;
+  font-size:.78em; font-weight:800; vertical-align:middle;
+  background:rgba(95,214,143,.24); color:var(--good); animation:ptsdeltain .25s ease;
+}
+.pts-delta.neg{ background:rgba(230,113,106,.2); color:var(--bad); }
+@keyframes ptsdeltain{ from{opacity:0; transform:scale(.7);} to{opacity:1; transform:scale(1);} }
+
+/* серия побед/неудач — тоже чип-бейдж, только когда есть что показать; слот
+   резервирует высоту всегда, чтобы карточки не «прыгали» по размеру */
+.team .streak-slot{ min-height:17px; display:flex; align-items:center; justify-content:center; }
+.team .streak-chip{
+  font-family:var(--body); font-size:10px; font-weight:700; color:var(--ink-dim);
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+  padding:2px 10px; border-radius:999px; white-space:nowrap;
+}
+.team.compact .streak-chip{ font-size:9px; padding:1px 8px; }
+
+.team .paths{ display:flex; gap:4px; width:100%; }
+.team .paths .pill{
+  flex:1; text-align:center; border-radius:7px; padding:6px 2px; cursor:pointer;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+  font-weight:700; white-space:nowrap; overflow:hidden; color:var(--ink-dim);
+  transition:background .15s ease, transform .1s ease, border-color .15s ease;
+}
+.team.full .paths .pill{ font-size:13px; }
+.team.compact .paths .pill{ font-size:10.5px; padding:6px 2px; }
+.team .paths .pill:hover{ transform:translateY(-1px); border-color:var(--gold); }
+.team .paths .pill.sel{ background:var(--accent-grad-soft); color:#181310; border-color:rgba(255,255,255,.6); }
+.team .paths .pill.locked{ opacity:.3; cursor:not-allowed; pointer-events:none; }
+
+.team.is-playing{ box-shadow:0 0 0 3px var(--glow-amber), 0 16px 40px rgba(0,0,0,.5); }
+.team.is-played{ opacity:.72; }
+.team.win-flash{ box-shadow:0 0 0 3px var(--good), 0 16px 40px rgba(0,0,0,.5); }
+.team.lose-flash{ box-shadow:0 0 0 3px var(--bad), 0 16px 40px rgba(0,0,0,.5); }
+
+.team .final-result{ display:flex; align-items:center; gap:5px; width:100%; }
+.team .final-result input{
+  width:100%; text-align:center; background:rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.25);
+  border-radius:6px; color:var(--ink); font-family:var(--mono); font-size:12px; padding:3px 2px;
+}
+
+.avatar-photo-input{ display:none; }
+
+/* ============================================================
+   ЦЕНТР СТОЛА
+   ============================================================ */
+.center-panel{
+  position:absolute; left:50%; top:53.5%; transform:translate(-50%,-50%);
+  width:800px;
+  padding:18px 32px;
+  display:flex; flex-direction:column; align-items:center; gap:9px;
+  text-align:center;
+}
+.center-panel .round-name{
+  font-family:var(--display); font-size:28px; font-weight:600; color:var(--ink);
+}
+.center-panel .round-sub{ font-size:12.5px; color:var(--ink-faint); letter-spacing:.04em; text-transform:uppercase; }
+.center-panel .step-badge{
+  font-size:11.5px; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; font-weight:700;
+}
+.center-panel .playing-of{ font-size:26px; color:var(--gold); font-weight:800; min-height:32px; }
+.center-panel .actions-row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.result-input-block{ display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap; }
+.result-input-block input[type=number]{
+  width:110px; text-align:center; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.25);
+  border-radius:var(--r-sm); color:var(--ink); font-family:var(--mono); font-size:19px; padding:9px 8px;
+}
+.result-input-block label{ font-size:13.5px; color:var(--ink-dim); }
+.chk-row{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-dim); }
+
+/* --- подсказка этапа для ведущего --- одна колонка: сверху строка «Шаг N.
+   Название», ниже — сам комментарий отдельной строкой (не в два столбца,
+   по правке Сашки). */
+.stage-hint{
+  width:100%; color:var(--ink); line-height:1.4;
+  background:rgba(227,169,68,.14); border:1px solid rgba(227,169,68,.35);
+  padding:12px 20px; border-radius:var(--r-sm);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  text-align:center;
+}
+.stage-hint.done{ background:rgba(95,214,143,.14); border-color:rgba(95,214,143,.4); }
+.stage-hint-head{ display:flex; align-items:center; justify-content:center; gap:8px; }
+.stage-hint-head .ico{ font-size:18px; flex:none; }
+.stage-hint-head .step-lbl{
+  color:var(--gold); font-weight:800; font-size:12px; letter-spacing:.05em; text-transform:uppercase;
+}
+.stage-hint-body{ font-size:14.5px; }
+
+/* --- блоки центра стола (после рандомайзера) --- */
+.cp-block{
+  width:100%; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r-md); padding:10px 22px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.cp-block-title{ font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-faint); font-weight:700; }
+.cp-progress{ font-size:13.5px; color:var(--ink-dim); }
+.cp-progress.cp-warn{ color:var(--warn); font-weight:600; }
+.cp-step-inline{ width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.cp-back{ align-self:flex-start; font-size:12px; padding:5px 12px; }
+.cp-table-wrap{ width:100%; max-height:230px; overflow-y:auto; border-radius:var(--r-sm); }
+.cp-table-wrap .breakdown-table{ font-size:12.5px; }
+.cp-table-wrap .breakdown-table th{ position:sticky; top:0; background:rgba(20,16,10,.92); }
+.cp-table-wrap .breakdown-table td{ padding:7px 8px; }
+.center-panel .path-info-grid{ width:100%; }
+.center-panel .path-info-card{ padding:12px 10px 10px; }
+.center-panel .path-info-card .num-badge{ font-size:10.5px; padding:4px 10px; }
+.center-panel .path-info-card .pts-bubble{ width:42px; height:42px; }
+.center-panel .path-info-card .pts-bubble b{ font-size:15px; }
+.center-panel .path-info-card .pts-bubble span{ font-size:6.5px; }
+.center-panel .path-info-card .lbl{ font-size:13.5px; }
+.center-panel .playing-of.small{ font-size:19px; min-height:24px; }
+
+/* ============================================================
+   МОДАЛКИ
+   ============================================================ */
+.modal-backdrop{
+  position:absolute; inset:0; background:rgba(4,6,9,.55);
+  display:flex; align-items:center; justify-content:center; z-index:50;
+}
+.modal-backdrop[hidden]{ display:none; }
+.modal{
+  width:760px; max-width:92vw; max-height:86vh; display:flex; flex-direction:column; overflow:hidden;
+}
+/* карточка пути — инфографическая иерархия (v2.7, по правке Сашки: выделить
+   «Путь №», добавить «баблы», убрать ощущение «налепленного» текста):
+   1) бейдж «ПУТЬ N» + балльная «бабл»-бейдж в одной верхней строке,
+   2) текст условия — главный, самый крупный элемент по центру,
+   3) счётчик выбравших — тихий чип внизу. */
+.path-info-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:stretch; }
+.path-info-card{ padding:16px 14px 14px; border-radius:var(--r-md); text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.path-info-card .top-row{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.path-info-card .num-badge{
+  display:inline-flex; align-items:center; padding:5px 12px; border-radius:999px;
+  background:var(--accent-grad-soft); color:#181310; font-family:var(--body); font-weight:800;
+  font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.path-info-card .pts-bubble{
+  flex:none; width:50px; height:50px; border-radius:50%;
+  background:radial-gradient(circle at 32% 26%, #fff3d8, #e2bd6c 55%, #a97f39);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.55);
+}
+.path-info-card .pts-bubble b{ font-family:var(--body); font-size:18px; font-weight:800; color:#241609; line-height:1; }
+.path-info-card .pts-bubble span{ font-size:7.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:#4a3616; }
+.path-info-card .lbl{ font-weight:600; font-size:15px; line-height:1.38; color:var(--ink); flex:1; display:flex; align-items:center; justify-content:center; }
+.path-info-card .choosers{ font-size:11.5px; color:var(--ink-faint); background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); padding:3px 11px; border-radius:999px; }
+
+.breakdown-table{ width:100%; border-collapse:collapse; text-align:left; font-size:15px; }
+.breakdown-table th{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); padding:6px 10px; text-align:left; }
+.breakdown-table td{ padding:9px 10px; border-top:1px solid rgba(255,255,255,.1); }
+.tag{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+.tag.win{ background:rgba(95,214,143,.22); color:var(--good); }
+.tag.lose{ background:rgba(230,113,106,.22); color:var(--bad); }
+.tag.bonus{ background:rgba(227,169,68,.22); color:var(--warn); margin-left:4px; }
+
+.leaderboard-row{ display:flex; align-items:center; gap:14px; padding:12px 6px; border-top:1px solid rgba(255,255,255,.08); font-size:15.5px; }
+.leaderboard-row .rank{ font-family:var(--mono); width:30px; color:var(--gold); font-weight:700; font-size:17px; }
+.leaderboard-row .lname{ flex:1; font-weight:600; }
+.leaderboard-row .lpts{ font-family:var(--mono); color:var(--ink); font-weight:700; }
+
+/* toasts — каждое уведомление привязано к позиции своей карточки.
+   Для карточек в нижней половине кольца уведомление показывается НАД
+   карточкой (below вылезало за пределы сцены и было не видно). */
+.toast-layer{ position:absolute; inset:0; z-index:40; pointer-events:none; }
+.toast{
+  position:absolute;
+  padding:7px 13px; border-radius:999px; font-size:12.5px; font-weight:600; text-align:center;
+  white-space:nowrap;
+}
+.toast.win{ border-color:rgba(95,214,143,.6); color:var(--good); }
+.toast.lose{ border-color:rgba(230,113,106,.55); color:var(--bad); }
+.toast.compact{ font-size:10.5px; padding:5px 9px; }
+.toast.below{ transform:translate(-50%,0); animation:toastin-below .25s ease; }
+.toast.above{ transform:translate(-50%,-100%); animation:toastin-above .25s ease; }
+@keyframes toastin-below{ from{opacity:0; transform:translate(-50%,-6px);} to{opacity:1; transform:translate(-50%,0);} }
+@keyframes toastin-above{ from{opacity:0; transform:translate(-50%,calc(-100% + 6px));} to{opacity:1; transform:translate(-50%,-100%);} }
+
+/* round constructor */
+.rc-round{ margin-bottom:16px; border-radius:var(--r-md); overflow:hidden; }
+.rc-round-head{ padding:14px 18px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+.rc-round-head .t{ font-weight:700; }
+.rc-head-actions{ display:flex; align-items:center; gap:10px; }
+button.rc-del{
+  width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(230,113,106,.16); border:1px solid rgba(230,113,106,.4); color:var(--bad); font-size:13px; line-height:1;
+}
+button.rc-del:hover{ background:rgba(230,113,106,.3); }
+.rc-round-body{ padding:0 18px 18px; display:flex; flex-direction:column; gap:12px; }
+.rc-round-body[hidden]{ display:none; }
+.rc-path-row{ display:grid; grid-template-columns:1.6fr .6fr 1fr 1fr; gap:8px; align-items:center; }
+.rc-path-row input, .rc-path-row select{
+  background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.2); border-radius:8px; color:var(--ink); padding:7px 9px; font-size:12.5px;
+}
+.rc-cond-params{ display:flex; gap:6px; }
+.rc-cond-params input{ width:56px; }
+
+.tabs{ display:flex; gap:8px; margin-bottom:18px; }
+.tabs button{ padding:8px 16px; border-radius:999px; font-size:13px; font-weight:600; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.15); color:var(--ink-dim); }
+.tabs button.active{ background:var(--accent-grad-soft); color:#181310; border-color:transparent; }
+
+.hint{ font-size:12px; color:var(--ink-faint); line-height:1.5; }
+
+/* ---------- полноэкранный режим ---------- */
+.fullscreen-btn{
+  position:fixed; top:14px; right:14px; z-index:100;
+  width:42px; height:42px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--glass-bg); backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
+  border:1px solid var(--glass-border); color:var(--ink);
+  box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 6px 16px rgba(0,0,0,.35);
+  font-size:17px; line-height:1; opacity:.72; transition:opacity .15s ease, transform .15s ease, background .2s ease;
+}
+.fullscreen-btn:hover{ opacity:1; background:var(--glass-bg-strong); transform:translateY(-1px); }
+.fullscreen-btn .ic-enter{ display:inline; }
+.fullscreen-btn .ic-exit{ display:none; }
+body.is-fullscreen .fullscreen-btn .ic-enter{ display:none; }
+body.is-fullscreen .fullscreen-btn .ic-exit{ display:inline; }
+</style>
+</head>
+<body>
+
+<div class="stage-outer" id="stageOuter">
+  <div class="stage" id="stage">
+
+    <!-- ================= ГЛАВНОЕ МЕНЮ ================= -->
+    <div class="screen" id="screen-menu">
+      <div class="menu-card glass">
+        <div class="brand-title">Путешествие в сказку</div>
+        <div class="brand-sub">У камня на распутье</div>
+        <div class="menu-grid">
+          <div class="menu-tile glass" data-action="new-game">
+            <div class="ico">🧭</div>
+            <div class="lbl">Новая игра</div>
+            <div class="sub">Настроить команды и начать</div>
+          </div>
+          <div class="menu-tile glass" data-action="saved-games">
+            <div class="ico">💾</div>
+            <div class="lbl">Сохранённые игры</div>
+            <div class="sub">Продолжить начатую партию</div>
+          </div>
+          <div class="menu-tile glass" data-action="history">
+            <div class="ico">🏆</div>
+            <div class="lbl">История игр</div>
+            <div class="sub">Итоги завершённых партий</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= МАСТЕР НОВОЙ ИГРЫ ================= -->
+    <div class="screen" id="screen-wizard" hidden>
+      <div class="panel-card glass">
+        <div class="panel-head">
+          <h2 id="wizardTitle">Новая игра — шаг 1 из 2</h2>
+          <button class="icon-btn" data-action="close-wizard">✕</button>
+        </div>
+        <div class="panel-body">
+          <div id="wizardStep1">
+            <div class="field-row">
+              <label>Количество команд (1–25)</label>
+              <div class="stepper-row">
+                <button class="glass-btn ghost" id="wizMinus">–</button>
+                <input type="range" id="wizCount" min="1" max="25" value="8">
+                <span class="n" id="wizCountVal">8</span>
+                <button class="glass-btn ghost" id="wizPlus">+</button>
+              </div>
+            </div>
+          </div>
+          <div id="wizardStep2" hidden>
+            <div class="hint" style="margin-bottom:12px;">Название команды и, по желанию, фото с компьютера. Всё это можно поменять и позже прямо на игровом поле.</div>
+            <div class="team-form-list" id="wizTeamList"></div>
+          </div>
+        </div>
+        <div class="panel-foot">
+          <button class="glass-btn ghost" id="wizBack" hidden>← Назад</button>
+          <div style="flex:1"></div>
+          <button class="glass-btn primary" id="wizNext">Далее →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= СОХРАНЁННЫЕ ИГРЫ ================= -->
+    <div class="screen" id="screen-saved" hidden>
+      <div class="panel-card glass">
+        <div class="panel-head">
+          <h2>Сохранённые игры</h2>
+          <button class="icon-btn" data-action="close-panel">✕</button>
+        </div>
+        <div class="panel-body">
+          <div class="list-rows" id="savedList"></div>
+        </div>
+        <div class="panel-foot">
+          <label class="glass-btn ghost" style="display:inline-flex;">
+            Загрузить файл игры…
+            <input type="file" id="loadGameFile" accept="application/json" style="display:none;">
+          </label>
+          <div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ИСТОРИЯ ИГР ================= -->
+    <div class="screen" id="screen-history" hidden>
+      <div class="panel-card glass">
+        <div class="panel-head">
+          <h2>История игр</h2>
+          <button class="icon-btn" data-action="close-panel">✕</button>
+        </div>
+        <div class="panel-body">
+          <div class="list-rows" id="historyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ИГРОВОЕ ПОЛЕ ================= -->
+    <div class="screen" id="screen-board" hidden style="padding:0; align-items:stretch; justify-content:flex-start;">
+      <div class="top-bar glass">
+        <div class="game-title" id="boardGameName">Путешествие в сказку</div>
+        <div class="game-timer" title="Время с начала игры">Время игры: <b id="gameTimer">00:00</b></div>
+        <div class="top-actions">
+          <button class="glass-btn ghost topbar-btn" data-action="open-paths">Пути раунда</button>
+          <button class="glass-btn ghost topbar-btn" data-action="open-summary">Итоги раунда</button>
+          <button class="glass-btn ghost topbar-btn" data-action="open-settings">Настройки</button>
+          <button class="glass-btn ghost topbar-btn" data-action="download-game">Скачать игру</button>
+          <button class="glass-btn ghost topbar-btn" data-action="finish-game">Завершить игру</button>
+          <button class="glass-btn ghost topbar-btn" data-action="to-menu">В меню</button>
+        </div>
+      </div>
+
+      <div class="table-surface"></div>
+      <div id="ringGuide" style="position:absolute; left:50%; top:53.5%; transform:translate(-50%,-50%); pointer-events:none;"></div>
+      <div id="teamsLayer"></div>
+
+      <div class="center-panel glass" id="centerPanel"></div>
+      <div class="toast-layer" id="toastLayer"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= ПОЛНОЭКРАННЫЙ РЕЖИМ ================= -->
+<button class="fullscreen-btn" id="fullscreenBtn" type="button" title="Полноэкранный режим">
+  <span class="ic-enter">⛶</span><span class="ic-exit">⤢</span>
+</button>
+
+<!-- ================= МОДАЛКА: ПУТИ РАУНДА ================= -->
+<div class="modal-backdrop" id="modalPaths" hidden>
+  <div class="modal glass modal-glass">
+    <div class="panel-head">
+      <h2 id="modalPathsTitle">Пути раунда</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="path-info-grid" id="pathInfoGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= МОДАЛКА: ИТОГИ РАУНДА ================= -->
+<div class="modal-backdrop" id="modalSummary" hidden>
+  <div class="modal glass" style="width:920px;">
+    <div class="panel-head">
+      <h2 id="modalSummaryTitle">Итоги раунда</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+    <div class="panel-body" id="modalSummaryBody">
+      <div class="empty-note">Раунд ещё не разыгран.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= МОДАЛКА: ЛИДЕРБОРД / ФИНАЛ ================= -->
+<div class="modal-backdrop" id="modalLeaderboard" hidden>
+  <div class="modal glass">
+    <div class="panel-head">
+      <h2>Итоговый лидерборд</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+    <div class="panel-body">
+      <div id="leaderboardBody"></div>
+    </div>
+    <div class="panel-foot">
+      <div></div>
+      <button class="glass-btn primary" id="btnFinalizeGame">Сохранить в историю</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= МОДАЛКА: НАСТРОЙКИ / КОНСТРУКТОР ================= -->
+<div class="modal-backdrop" id="modalSettings" hidden>
+  <div class="modal glass" style="width:920px;">
+    <div class="panel-head">
+      <h2>Настройки и конструктор раундов</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="tabs">
+        <button class="active" data-tab="general">Общее</button>
+        <button data-tab="rounds">Раунды и пути</button>
+      </div>
+      <div id="tabGeneral">
+        <div class="field-row">
+          <label>Слово вместо «раунда» (необязательно)</label>
+          <input type="text" id="settingRoundWord" placeholder="раунд">
+        </div>
+        <div class="field-row">
+          <label>Название игры</label>
+          <input type="text" id="settingGameName">
+        </div>
+      </div>
+      <div id="tabRounds" hidden>
+        <p class="hint" style="margin-bottom:14px;">Приложению нужны только названия раундов и три пути (текст, баллы, условие) — сам вопрос/задание показывается в презентации. Баллы и пороги можно поправить здесь в любой момент. Можно добавить собственный раунд вручную и прописать в нём свои пути и ставки.</p>
+        <div id="roundsConstructor"></div>
+        <button class="glass-btn ghost" style="margin-top:4px;" data-action="add-round">+ Добавить раунд</button>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <button class="glass-btn ghost" data-action="reset-rounds">Вернуть заводские раунды</button>
+      <button class="glass-btn primary" data-action="save-settings">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   1. ДАННЫЕ ПО УМОЛЧАНИЮ: 7 РАУНДОВ, ТРИ ПУТИ КАЖДЫЙ
+   Условие пути evaluируется независимо от других путей того же
+   раунда (может выиграть больше одного пути сразу — например,
+   «чётное число» и «15 и больше» могут совпасть на одном результате).
+   Всё редактируется в Настройках → Раунды и пути.
+   ============================================================ */
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+function autoGameName(){
+  var d = new Date();
+  var date = d.toLocaleDateString('ru-RU');
+  var time = d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  return 'Путешествие в сказку — ' + date + ' ' + time;
+}
+
+function defaultRounds(){
+  return [
+    { id:uid('rnd'), type:'normal', name:'Сказочная мудрость', resultType:'count', resultLabel:'Верных ответов (из 8)', resultMax:8,
+      paths:[
+        {id:uid('p'), label:'Команда даст меньше 5 верных ответов', points:2, cond:{type:'range', min:0, max:4}},
+        {id:uid('p'), label:'Команда даст 5 и больше верных ответов', points:2, cond:{type:'range', min:5, max:7}},
+        {id:uid('p'), label:'Команда ответит на все вопросы верно', points:3, cond:{type:'range', min:8, max:8}},
+      ]},
+    { id:uid('rnd'), type:'normal', name:'Вспомнить за 60 секунд', resultType:'count', resultLabel:'Названо сказок за 60 сек', resultMax:null,
+      paths:[
+        {id:uid('p'), label:'Команда назовёт не больше 15 сказок', points:2, cond:{type:'max', value:15}},
+        {id:uid('p'), label:'Команда назовёт чётное число сказок', points:2, cond:{type:'parity', value:'even'}},
+        {id:uid('p'), label:'Команда назовёт 15 и больше сказок', points:3, cond:{type:'min', value:15}},
+      ]},
+    { id:uid('rnd'), type:'normal', name:'Стоп-кадр из детства', resultType:'count', resultLabel:'Ошибок (из 8)', resultMax:8,
+      paths:[
+        {id:uid('p'), label:'Команда ответит на все вопросы неверно', points:2, cond:{type:'range', min:8, max:8}},
+        {id:uid('p'), label:'Команда допустит не более 3 ошибок', points:2, cond:{type:'range', min:1, max:3}},
+        {id:uid('p'), label:'Команда не допустит ни одной ошибки', points:3, cond:{type:'range', min:0, max:0}},
+      ]},
+    { id:uid('rnd'), type:'normal', name:'Помогаторы', resultType:'count', resultLabel:'Названо предметов за 60 сек', resultMax:null,
+      paths:[
+        {id:uid('p'), label:'Команда назовёт до 10 волшебных сказочных предметов', points:2, cond:{type:'max', value:10}},
+        {id:uid('p'), label:'Команда назовёт нечётное число волшебных сказочных предметов', points:2, cond:{type:'parity', value:'odd'}},
+        {id:uid('p'), label:'Команда назовёт 10 и больше волшебных сказочных предметов', points:3, cond:{type:'min', value:10}},
+      ]},
+    { id:uid('rnd'), type:'normal', name:'Тайный персонаж', resultType:'time', resultLabel:'Время выполнения, сек (300 и более = не справилась)', resultMax:null,
+      paths:[
+        {id:uid('p'), label:'Команда не справится с заданием за 300 секунд', points:2, cond:{type:'range', min:300, max:null}},
+        {id:uid('p'), label:'Команда справится с заданием больше чем за 150 секунд', points:2, cond:{type:'range', min:150, max:299}},
+        {id:uid('p'), label:'Команда справится с заданием меньше чем за 150 секунд', points:3, cond:{type:'range', min:0, max:149}},
+      ]},
+    { id:uid('rnd'), type:'normal', name:'Знакомый сюжет', resultType:'count', resultLabel:'Ошибок (из 5 фрагментов)', resultMax:5,
+      paths:[
+        {id:uid('p'), label:'Команда допустит как минимум 1 ошибку', points:2, cond:{type:'range', min:1, max:4}},
+        {id:uid('p'), label:'Команда вовсе не справится с заданием', points:2, cond:{type:'range', min:5, max:5}},
+        {id:uid('p'), label:'Команда не допустит ошибок', points:3, cond:{type:'range', min:0, max:0}},
+      ]},
+    { id:uid('rnd'), type:'final', name:'Супер игра — Сказочный код', resultType:'position-per-team', resultLabel:'Место финиша (0 = не справилась)', resultMax:null,
+      paths:[
+        {id:uid('p'), label:'Мы разгадаем все 5 загадок первыми', points:5, cond:{type:'range', min:1, max:1}},
+        {id:uid('p'), label:'Мы войдём в тройку тех, кто первыми разгадает все 5 загадок', points:3, cond:{type:'range', min:1, max:3}},
+        {id:uid('p'), label:'Мы разгадаем все 5 загадок за 3 минуты', points:2, cond:{type:'min', value:1}},
+      ]},
+  ];
+}
+
+function evalCond(cond, result){
+  if (!result) return false;
+  if (cond.type === 'flag') return !!result.flag;
+  if (result.flag) return false;
+  var v = result.value;
+  if (v === null || v === undefined || isNaN(v)) return false;
+  switch(cond.type){
+    case 'range':
+      if (cond.min !== null && cond.min !== undefined && v < cond.min) return false;
+      if (cond.max !== null && cond.max !== undefined && v > cond.max) return false;
+      return true;
+    case 'min': return v >= cond.value;
+    case 'max': return v <= cond.value;
+    case 'parity': return cond.value === 'even' ? (v % 2 === 0) : (v % 2 === 1);
+    case 'exact': return v === cond.value;
+    default: return false;
+  }
+}
+
+/* ============================================================
+   1a. ПРОСТЫЕ ЗВУКИ ОТКЛИКА (Web Audio, без внешних файлов)
+   ============================================================ */
+var audioCtx = null;
+function beep(freq, dur, type, gain){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    var vol = gain || 0.12;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol, audioCtx.currentTime + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur + 0.02);
+  }catch(e){ /* аудио недоступно — тихо игнорируем */ }
+}
+function sfxClick(){ beep(560, 0.05, 'sine', 0.08); }
+function sfxSelect(){ beep(720, 0.06, 'sine', 0.09); }
+function sfxDeselect(){ beep(360, 0.05, 'sine', 0.07); }
+function sfxTick(){ beep(420, 0.025, 'square', 0.05); }
+function sfxLand(){ beep(660, 0.09, 'sine', 0.1); setTimeout(function(){ beep(880, 0.12, 'sine', 0.1); }, 80); }
+function sfxWin(){ beep(760, 0.1, 'sine', 0.11); setTimeout(function(){ beep(1040, 0.16, 'sine', 0.11); }, 90); }
+function sfxLose(){ beep(280, 0.2, 'sine', 0.09); }
+function sfxOpen(){ beep(500, 0.05, 'sine', 0.07); }
+
+/* ============================================================
+   2. СОСТОЯНИЕ / ХРАНИЛИЩЕ
+   ============================================================ */
+var LS_INDEX = 'skazka_games_index_v1';
+var LS_GAME_PREFIX = 'skazka_game_v1_';
+
+var G = null; // текущая активная игра (state)
+var wizTeams = []; // временный список команд в мастере
+
+function newGameState(name, teamNames){
+  var teams = teamNames.map(function(n, i){
+    return {
+      id: uid('team'), name: n || ('Команда ' + (i+1)), photo:null,
+      points:0, status:'idle', hasPlayed:false, chosenPath:null,
+      streak:{win:0, loss:0}, lastGain:0
+    };
+  });
+  var rounds = defaultRounds();
+  return {
+    id: uid('game'),
+    name: name || autoGameName(),
+    createdAt: Date.now(), updatedAt: Date.now(), startedAt: Date.now(),
+    status: 'in_progress',
+    roundWord: 'раунд',
+    roundsConfig: rounds,
+    teams: teams,
+    currentRoundIndex: 0,
+    playingTeamId: null,
+    roundResult: {value:null, flag:false},
+    finalResults: {},
+    resolvedRounds: [],
+    flowStage: defaultFlowStage(rounds[0])
+  };
+}
+// начальный «шаг-окно» для раунда: обычный раунд начинается с рандомайзера,
+// финальный — сразу с показа путей (играющую команду там не выбирают)
+function defaultFlowStage(round){ return round.type === 'final' ? 'paths' : 'randomize'; }
+
+function saveIndex(idx){ localStorage.setItem(LS_INDEX, JSON.stringify(idx)); }
+function loadIndex(){ try{ return JSON.parse(localStorage.getItem(LS_INDEX)) || []; }catch(e){ return []; } }
+
+function persistGame(){
+  if (!G) return;
+  G.updatedAt = Date.now();
+  try{
+    localStorage.setItem(LS_GAME_PREFIX + G.id, JSON.stringify(G));
+    var idx = loadIndex();
+    var found = idx.find(function(e){ return e.id === G.id; });
+    var entry = { id:G.id, name:G.name, status:G.status, updatedAt:G.updatedAt, teamsCount:G.teams.length };
+    if (found){ Object.assign(found, entry); } else { idx.unshift(entry); }
+    saveIndex(idx);
+  }catch(e){ console.warn('Автосохранение не удалось', e); }
+}
+var persistDebounced = (function(){
+  var t=null;
+  return function(){ clearTimeout(t); t=setTimeout(persistGame, 400); };
+})();
+
+function loadGameById(id){
+  try{ return JSON.parse(localStorage.getItem(LS_GAME_PREFIX + id)); }catch(e){ return null; }
+}
+function deleteGameById(id){
+  localStorage.removeItem(LS_GAME_PREFIX + id);
+  saveIndex(loadIndex().filter(function(e){ return e.id !== id; }));
+}
+
+function teamById(id){ return G.teams.find(function(t){ return t.id===id; }); }
+function currentRound(){ return G.roundsConfig[G.currentRoundIndex]; }
+
+/* ============================================================
+   3. ГЕОМЕТРИЯ КОЛЬЦА (та же формула, что в тестовом референсе)
+   ============================================================ */
+var RX = 800, RY = 387, CX = 960, CY = 578; // сдвинуто вниз и уменьшен вертикальный радиус, чтобы верхняя карточка не заходила под шапку
+function ellipseCircumference(a,b){
+  var h = Math.pow(a-b,2) / Math.pow(a+b,2);
+  return Math.PI*(a+b)*(1 + (3*h)/(10+Math.sqrt(4-3*h)));
+}
+var CIRC = ellipseCircumference(RX,RY);
+// Подобрано опытным путём (проверено автотестом на AABB-пересечения карточек):
+// при равной по УГЛУ расстановке хватало места и на бОльшее число карточек,
+// но реальный прямоугольник карточки не наезжает на соседнюю, только пока
+// обе координаты (dx И dy) разнесены достаточно — а не когда просто велика
+// хорда между центрами. Поэтому пороги ниже — не аналитическая формула,
+// а эмпирически проверенные безопасные границы для полного/компактного
+// размера карточки; сверх MAX_RING — прямоугольная («квадратная») расстановка.
+var MAX_FULL = 14;
+var MAX_RING = 20;
+// прямоугольная («квадратная») расстановка по периметру — для больших составов;
+// оставляет центр стола свободным для окна этапа, как и кольцо
+var RECT_SAFE = { left:110, right:1810, top:175, bottom:985 };
+// реальные габариты карточек (замерены в браузере) + запас — используются
+// страховочным проходом ниже, который раздвигает любые две карточки,
+// оказавшиеся ближе, чем нужно для их размера
+// высота карточки чуть выросла в v2.7 (добавлены разделитель и чипы баллов/серии) —
+// значения подняты с запасом, чтобы страховочный проход resolveCardCollisions/
+// clampToStage по-прежнему гарантированно не давал карточкам наезжать друг на друга
+var CARD_DIMS = { full:{w:198, h:212}, compact:{w:168, h:178} };
+
+// страховочный проход: раздвигает все пары карточек, чьи прямоугольники
+// пересекаются — гарантия «без наезда» независимо от кривизны кольца/угла
+// прямоугольника (в отличие от расстановки по одной лишь длине дуги/периметра)
+function resolveCardCollisions(pts, dims, iterations){
+  var n = pts.length, w = dims.w, h = dims.h;
+  for (var iter=0; iter<iterations; iter++){
+    var moved = false;
+    for (var i=0;i<n;i++){
+      for (var j=i+1;j<n;j++){
+        var dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+        var overlapX = w - Math.abs(dx), overlapY = h - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0){
+          moved = true;
+          if (overlapX < overlapY){
+            var pushX = overlapX/2 + 0.5;
+            var signX = dx > 0 ? 1 : (dx < 0 ? -1 : 1);
+            pts[i].x -= signX*pushX; pts[j].x += signX*pushX;
+          } else {
+            var pushY = overlapY/2 + 0.5;
+            var signY = dy > 0 ? 1 : (dy < 0 ? -1 : 1);
+            pts[i].y -= signY*pushY; pts[j].y += signY*pushY;
+          }
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  return pts;
+}
+// подстраховка: удерживает карточки внутри сцены 1920×1080, даже если
+// раздвигающий проход выше слегка вытолкнул угловую точку за край
+function clampToStage(pts, dims){
+  var margin = 6;
+  var minX = dims.w/2+margin, maxX = 1920-dims.w/2-margin;
+  var minY = dims.h/2+margin, maxY = 1080-dims.h/2-margin;
+  pts.forEach(function(p){
+    if (p.x < minX) p.x = minX; else if (p.x > maxX) p.x = maxX;
+    if (p.y < minY) p.y = minY; else if (p.y > maxY) p.y = maxY;
+  });
+  return pts;
+}
+
+// равномерное по ДЛИНЕ ДУГИ (а не по углу!) распределение n точек по эллипсу.
+// Раньше точки шли через равные УГЛЫ, а т.к. RX≠RY дуга около полюсов (верх/низ
+// кольца) короче дуги по бокам — карточки там сближались и наезжали друг на друга.
+function ellipseEqualArcAngles(rx, ry, n){
+  var STEPS = 2880;
+  var startAngle = -Math.PI/2;
+  var angleAt = new Array(STEPS+1), cumAt = new Array(STEPS+1);
+  angleAt[0] = startAngle; cumAt[0] = 0;
+  var prevX = rx*Math.cos(startAngle), prevY = ry*Math.sin(startAngle);
+  for (var i=1;i<=STEPS;i++){
+    var a = startAngle + Math.PI*2*i/STEPS;
+    var x = rx*Math.cos(a), y = ry*Math.sin(a);
+    var dx = x-prevX, dy = y-prevY;
+    cumAt[i] = cumAt[i-1] + Math.sqrt(dx*dx+dy*dy);
+    angleAt[i] = a;
+    prevX = x; prevY = y;
+  }
+  var total = cumAt[STEPS];
+  var out = [], seg = 0;
+  for (var k=0;k<n;k++){
+    var target = total * k / n;
+    while (seg < STEPS-1 && cumAt[seg+1] < target) seg++;
+    var c0 = cumAt[seg], c1 = cumAt[seg+1];
+    var t = c1 > c0 ? (target - c0)/(c1-c0) : 0;
+    out.push(angleAt[seg] + (angleAt[seg+1]-angleAt[seg])*t);
+  }
+  return out;
+}
+
+// точка на периметре прямоугольника на расстоянии d от левого верхнего угла,
+// по часовой стрелке начиная с верхней стороны
+function pointAtRectPerimeter(rect, d){
+  var w = rect.right-rect.left, h = rect.bottom-rect.top;
+  if (d < w) return { x: rect.left+d, y: rect.top };
+  d -= w;
+  if (d < h) return { x: rect.right, y: rect.top+d };
+  d -= h;
+  if (d < w) return { x: rect.right-d, y: rect.bottom };
+  d -= w;
+  return { x: rect.left, y: rect.bottom-d };
+}
+function rectRingPositions(n){
+  var w = RECT_SAFE.right-RECT_SAFE.left, h = RECT_SAFE.bottom-RECT_SAFE.top;
+  var perim = 2*(w+h);
+  var start = w/2; // начинаем с середины верхней стороны — симметрично, как верхняя точка эллипса
+  var pos = [];
+  for (var k=0;k<n;k++){
+    var d = (start + perim*k/n) % perim;
+    pos.push(pointAtRectPerimeter(RECT_SAFE, d));
+  }
+  resolveCardCollisions(pos, CARD_DIMS.compact, 20);
+  clampToStage(pos, CARD_DIMS.compact);
+  // раздвигание и клэмп поочерёдно ещё несколько раз — раздвигающий проход мог
+  // вытолкнуть карточку за край, а один клэмп в конце мог обратно свести две карточки
+  for (var pass=0; pass<4; pass++){ resolveCardCollisions(pos, CARD_DIMS.compact, 6); clampToStage(pos, CARD_DIMS.compact); }
+  return { compact:true, pos:pos, mode:'rect' };
+}
+
+/* ============================================================
+   4. ЭКРАНЫ / НАВИГАЦИЯ
+   ============================================================ */
+function showScreen(id){
+  ['screen-menu','screen-wizard','screen-saved','screen-history','screen-board'].forEach(function(s){
+    document.getElementById(s).hidden = (s !== id);
+  });
+}
+function closeModals(){
+  ['modalPaths','modalSummary','modalLeaderboard','modalSettings'].forEach(function(m){
+    document.getElementById(m).hidden = true;
+  });
+}
+
+/* ============================================================
+   5. МАСТЕР НОВОЙ ИГРЫ
+   ============================================================ */
+var wizStep = 1;
+function openWizard(){
+  wizStep = 1;
+  document.getElementById('wizCount').value = 8;
+  document.getElementById('wizCountVal').textContent = 8;
+  wizTeams = Array.from({length:8}, function(_,i){ return {name:'Команда ' + (i+1), photo:null}; });
+  renderWizardStep();
+  showScreen('screen-wizard');
+}
+function renderWizardStep(){
+  var s1 = document.getElementById('wizardStep1'), s2 = document.getElementById('wizardStep2');
+  var back = document.getElementById('wizBack'), next = document.getElementById('wizNext');
+  document.getElementById('wizardTitle').textContent = 'Новая игра — шаг ' + wizStep + ' из 2';
+  if (wizStep === 1){
+    s1.hidden = false; s2.hidden = true; back.hidden = true; next.textContent = 'Далее →';
+  } else {
+    s1.hidden = true; s2.hidden = false; back.hidden = false; next.textContent = 'Начать игру →';
+    renderWizTeamList();
+  }
+}
+function renderWizTeamList(){
+  var list = document.getElementById('wizTeamList');
+  list.innerHTML = wizTeams.map(function(t, i){
+    var bg = t.photo ? ('background-image:url(' + t.photo + ')') : '';
+    return '<div class="team-form-row" data-i="'+i+'">' +
+      '<label class="avatar-pick" style="'+bg+'" title="Загрузить фото">' + (t.photo?'':(i+1)) +
+        '<span class="avatar-hint">📷</span>' +
+        '<input type="file" accept="image/*" class="avatar-photo-input" data-i="'+i+'"></label>' +
+      '<input type="text" data-i="'+i+'" value="'+escapeHtml(t.name)+'" placeholder="Название команды">' +
+    '</div>';
+  }).join('');
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+document.getElementById('wizCount').addEventListener('input', function(e){
+  var n = parseInt(e.target.value,10);
+  document.getElementById('wizCountVal').textContent = n;
+});
+document.getElementById('wizMinus').addEventListener('click', function(){
+  var el = document.getElementById('wizCount'); el.value = Math.max(1, parseInt(el.value,10)-1); el.dispatchEvent(new Event('input'));
+});
+document.getElementById('wizPlus').addEventListener('click', function(){
+  var el = document.getElementById('wizCount'); el.value = Math.min(25, parseInt(el.value,10)+1); el.dispatchEvent(new Event('input'));
+});
+document.getElementById('wizBack').addEventListener('click', function(){ wizStep = 1; renderWizardStep(); });
+document.getElementById('wizNext').addEventListener('click', function(){
+  if (wizStep === 1){
+    var n = parseInt(document.getElementById('wizCount').value,10);
+    wizTeams = Array.from({length:n}, function(_,i){
+      return wizTeams[i] || {name:'Команда ' + (i+1), photo:null};
+    });
+    wizStep = 2; renderWizardStep();
+  } else {
+    // собрать имена из полей на всякий случай
+    document.querySelectorAll('#wizTeamList input[type=text]').forEach(function(inp){
+      wizTeams[parseInt(inp.dataset.i,10)].name = inp.value || ('Семья ' + (parseInt(inp.dataset.i,10)+1));
+    });
+    G = newGameState(null, wizTeams.map(function(t){return t.name;}));
+    wizTeams.forEach(function(t,i){ G.teams[i].photo = t.photo || null; });
+    persistGame();
+    enterBoard();
+  }
+});
+document.getElementById('wizTeamList').addEventListener('input', function(e){
+  if (e.target.matches('input[type=text]')){
+    wizTeams[parseInt(e.target.dataset.i,10)].name = e.target.value;
+  }
+});
+document.getElementById('wizTeamList').addEventListener('change', function(e){
+  if (e.target.matches('.avatar-photo-input')){
+    var i = parseInt(e.target.dataset.i,10);
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){ wizTeams[i].photo = reader.result; renderWizTeamList(); };
+    reader.readAsDataURL(file);
+  }
+});
+document.getElementById('loadGameFile').addEventListener('change', function(e){
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var loaded = JSON.parse(reader.result);
+      loaded.id = loaded.id || uid('game');
+      G = loaded;
+      persistGame();
+      enterBoard();
+    }catch(err){ alert('Не удалось прочитать файл игры.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   6. СОХРАНЁННЫЕ ИГРЫ / ИСТОРИЯ
+   ============================================================ */
+function openSavedGames(){
+  var idx = loadIndex().filter(function(e){ return e.status === 'in_progress'; });
+  var el = document.getElementById('savedList');
+  el.innerHTML = idx.length ? idx.map(function(e){
+    return '<div class="list-row" data-id="'+e.id+'">' +
+      '<div><div style="font-weight:700;">'+escapeHtml(e.name)+'</div>' +
+      '<div class="meta">'+e.teamsCount+' команд · обновлено '+new Date(e.updatedAt).toLocaleString('ru-RU')+'</div></div>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button class="glass-btn ghost" data-act="open" data-id="'+e.id+'">Открыть</button>' +
+      '<button class="glass-btn danger" data-act="del" data-id="'+e.id+'">Удалить</button>' +
+      '</div></div>';
+  }).join('') : '<div class="empty-note">Пока нет сохранённых партий.</div>';
+  showScreen('screen-saved');
+}
+document.getElementById('savedList').addEventListener('click', function(e){
+  var btn = e.target.closest('button'); if (!btn) return;
+  var id = btn.dataset.id;
+  if (btn.dataset.act === 'open'){
+    var loaded = loadGameById(id);
+    if (loaded){ G = loaded; enterBoard(); }
+  } else if (btn.dataset.act === 'del'){
+    if (confirm('Удалить эту сохранённую игру?')){ deleteGameById(id); openSavedGames(); }
+  }
+});
+
+function openHistory(){
+  var idx = loadIndex().filter(function(e){ return e.status === 'completed'; });
+  var el = document.getElementById('historyList');
+  el.innerHTML = idx.length ? idx.map(function(e){
+    return '<div class="list-row" data-id="'+e.id+'">' +
+      '<div><div style="font-weight:700;">'+escapeHtml(e.name)+'</div>' +
+      '<div class="meta">'+e.teamsCount+' команд · завершена '+new Date(e.updatedAt).toLocaleString('ru-RU')+'</div></div>' +
+      '<button class="glass-btn ghost" data-act="view" data-id="'+e.id+'">Лидерборд</button>' +
+      '</div>';
+  }).join('') : '<div class="empty-note">Пока нет завершённых игр.</div>';
+  showScreen('screen-history');
+}
+document.getElementById('historyList').addEventListener('click', function(e){
+  var btn = e.target.closest('button'); if (!btn) return;
+  var loaded = loadGameById(btn.dataset.id);
+  if (loaded){ G = loaded; renderLeaderboardModal(true); document.getElementById('modalLeaderboard').hidden = false; }
+});
+
+/* ============================================================
+   7. ИГРОВОЕ ПОЛЕ: РЕНДЕР
+   ============================================================ */
+var gameTimerInterval = null;
+function startGameTimer(){
+  if (!G.startedAt) G.startedAt = G.createdAt || Date.now();
+  clearInterval(gameTimerInterval);
+  updateGameTimer();
+  gameTimerInterval = setInterval(updateGameTimer, 1000);
+}
+function stopGameTimer(){ clearInterval(gameTimerInterval); gameTimerInterval = null; }
+function updateGameTimer(){
+  if (!G || !G.startedAt) return;
+  var sec = Math.max(0, Math.floor((Date.now() - G.startedAt) / 1000));
+  var h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  var pad = function(n){ return (n<10?'0':'')+n; };
+  var txt = (h>0 ? pad(h)+':' : '') + pad(m) + ':' + pad(s);
+  var el = document.getElementById('gameTimer');
+  if (el) el.textContent = txt;
+}
+
+function enterBoard(){
+  showScreen('screen-board');
+  document.getElementById('boardGameName').textContent = G.name;
+  document.getElementById('toastLayer').innerHTML = ''; // не тащим всплывашки из предыдущей открытой игры
+  pointsFlash = {};
+  renderRing();
+  renderCenterPanel();
+  startGameTimer();
+}
+
+function ringPositions(n){
+  if (n > MAX_RING) return rectRingPositions(n);
+  var compact = n > MAX_FULL;
+  var angles = ellipseEqualArcAngles(RX, RY, n);
+  var pos = angles.map(function(a){ return { x: CX + RX*Math.cos(a), y: CY + RY*Math.sin(a) }; });
+  var dims = compact ? CARD_DIMS.compact : CARD_DIMS.full;
+  resolveCardCollisions(pos, dims, 20);
+  clampToStage(pos, dims);
+  // раздвигание и клэмп поочерёдно ещё несколько раз — раздвигающий проход мог
+  // вытолкнуть карточку за край, а один клэмп в конце мог обратно свести две карточки
+  for (var pass=0; pass<4; pass++){ resolveCardCollisions(pos, dims, 6); clampToStage(pos, dims); }
+  return {compact:compact, pos:pos, mode:'ring'};
+}
+
+var lastTeamPositions = {};
+// «прибавка баллов» прямо в поле карточки после розыгрыша: teamId -> {old:число, gain:число}.
+// Пока команда есть в этой карте, renderRing() показывает старое значение + зелёную/красную
+// прибавку рядом; через 10 сек запись снимается и остаётся только новый итог.
+var pointsFlash = {};
+function ptsHtml(t){
+  var flash = pointsFlash[t.id];
+  if (!flash) return t.points + ' б.';
+  var sign = flash.gain >= 0 ? '+' : '';
+  var cls = flash.gain > 0 ? '' : 'neg'; // 0 и меньше — красным (путь не сыграл), положительный — зелёным
+  return flash.old + ' б.<span class="pts-delta '+cls+'">'+sign+flash.gain+'</span>';
+}
+
+function renderRing(){
+  var n = G.teams.length;
+  var layout = ringPositions(n || 1);
+  var layer = document.getElementById('teamsLayer');
+  var round = currentRound();
+  var isFinal = round.type === 'final';
+  lastTeamPositions = {};
+
+  layer.innerHTML = G.teams.map(function(t, i){
+    var p = layout.pos[i];
+    lastTeamPositions[t.id] = { x:p.x, y:p.y, compact:layout.compact };
+    var sizeClass = layout.compact ? 'compact' : 'full';
+    var statusClass = t.status === 'playing' ? 'is-playing' : (t.status === 'played' ? 'is-played' : '');
+    var bg = t.photo ? ('background-image:url('+t.photo+')') : '';
+    var avatarInner = t.photo ? '' : (i+1);
+
+    var pathsHtml;
+    if (isFinal){
+      var res = G.finalResults[t.id];
+      var val = res && res.value != null ? res.value : '';
+      pathsHtml =
+        '<div class="paths">' + round.paths.map(function(p2){
+          var sel = t.chosenPath === p2.id ? 'sel' : '';
+          return '<span class="pill '+sel+'" data-team="'+t.id+'" data-path="'+p2.id+'" title="'+escapeHtml(p2.label)+'">Путь '+ (round.paths.indexOf(p2)+1) +'</span>';
+        }).join('') + '</div>' +
+        '<div class="final-result"><input type="number" data-team="'+t.id+'" class="final-input" placeholder="место" value="'+val+'"></div>';
+    } else {
+      var locked = t.status === 'playing' ? 'locked' : '';
+      pathsHtml = '<div class="paths">' + round.paths.map(function(p2){
+        var sel = t.chosenPath === p2.id ? 'sel' : '';
+        return '<span class="pill '+sel+' '+locked+'" data-team="'+t.id+'" data-path="'+p2.id+'" title="'+escapeHtml(p2.label)+'">Путь '+ (round.paths.indexOf(p2)+1) +'</span>';
+      }).join('') + '</div>';
+    }
+
+    var streakTxt = '';
+    if (t.streak.win>0) streakTxt = '🔥 серия побед: '+t.streak.win;
+    else if (t.streak.loss>0) streakTxt = '💧 серия неудач: '+t.streak.loss;
+
+    return '<div class="team glass '+sizeClass+' '+statusClass+'" style="left:'+p.x+'px;top:'+p.y+'px;" data-team-card="'+t.id+'">' +
+      '<label class="avatar" style="'+bg+'">'+avatarInner+'<span class="avatar-hint">📷</span><input type="file" accept="image/*" class="avatar-photo-input" data-team="'+t.id+'"></label>' +
+      '<div class="name" contenteditable="true" data-team="'+t.id+'" spellcheck="false">'+escapeHtml(t.name)+'</div>' +
+      '<div class="card-divider"></div>' +
+      '<div class="pts-chip"><div class="pts">'+ptsHtml(t)+'</div></div>' +
+      '<div class="streak-slot">'+(streakTxt?('<span class="streak-chip">'+streakTxt+'</span>'):'')+'</div>' +
+      pathsHtml +
+    '</div>';
+  }).join('');
+}
+
+function pathsChosenCount(round){
+  if (round.type === 'final') return G.teams.filter(function(t){ return t.chosenPath; }).length;
+  return G.teams.filter(function(t){ return t.id !== G.playingTeamId && t.chosenPath; }).length;
+}
+
+// результат обязателен: без него «Разыграть путь»/«Разыграть финал» недоступны
+function normalResultEntered(){
+  var v = G.roundResult.value;
+  return v !== null && v !== undefined && v !== '' && !isNaN(v);
+}
+function finalAnyResultEntered(){
+  // как и с выбором пути — достаточно хотя бы одной внесённой командой позиции, не обязательно всех
+  return G.teams.some(function(t){
+    var r = G.finalResults[t.id];
+    return r && r.value !== null && r.value !== undefined && r.value !== '' && !isNaN(r.value);
+  });
+}
+function canResolveRound(round){
+  var chosenCount = pathsChosenCount(round);
+  if (chosenCount === 0) return false;
+  return round.type === 'final' ? finalAnyResultEntered() : normalResultEntered();
+}
+// точечное обновление состояния кнопки «Разыграть путь»/«Разыграть финал» без полной перерисовки
+// панели (полная перерисовка на каждый ввод символа сбивала бы фокус с поля результата)
+function updateResolveButtonState(){
+  var round = currentRound();
+  if (G.resolvedRounds.some(function(r){ return r.roundId === round.id; })) return;
+  var btn = document.querySelector('[data-action="resolve-round"]');
+  if (!btn) return;
+  btn.disabled = !canResolveRound(round);
+  var warn = document.getElementById('cpResultWarn');
+  if (warn){
+    var resultOk = round.type === 'final' ? finalAnyResultEntered() : normalResultEntered();
+    warn.style.display = resultOk ? 'none' : '';
+  }
+}
+
+// какие «окна»-шаги проходит раунд и их подписи — теперь вписываются прямо в
+// текст комментария каждого шага («Шаг 3. Пути: …»), а не отдельным бейджем
+function stepInfo(round){
+  var steps = round.type === 'final' ? ['paths','resolve'] : ['randomize','team','paths','resolve'];
+  var labels = { randomize:'Рандомайзер', team:'Играющая команда', paths:'Пути', resolve: round.type==='final' ? 'Разыграть финал' : 'Разыграть путь' };
+  var idx = steps.indexOf(G.flowStage);
+  if (idx < 0) idx = 0;
+  return { idx:idx, total:steps.length, label:labels[steps[idx]] };
+}
+// префикс «Шаг N. Название:» — вставляется в начало текста подсказки этапа,
+// чтобы номер шага и комментарий жили в одном тематическом блоке (а не в
+// отдельном бейдже над блоком, как раньше)
+// подсказка этапа — одной колонкой: строка «Шаг N. Название» сверху, комментарий ниже
+// (не разбито на два столбца, по правке Сашки)
+function stageHintHtml(ico, info, text){
+  return '<div class="stage-hint">' +
+    '<div class="stage-hint-head"><span class="ico">'+ico+'</span><span class="step-lbl">Шаг '+(info.idx+1)+'. '+info.label+'</span></div>' +
+    '<div class="stage-hint-body">'+text+'</div>' +
+  '</div>';
+}
+
+// «2 балла», «5 баллов», «1 балл» — правильное русское склонение для бабл-бейджа баллов
+function ptsWord(n){
+  var n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return 'балл';
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return 'балла';
+  return 'баллов';
+}
+function pathInfoCardsHtml(round){
+  var choosers = {};
+  round.paths.forEach(function(p){ choosers[p.id] = 0; });
+  G.teams.forEach(function(t){ if (t.chosenPath && t.status!=='playing') choosers[t.chosenPath] = (choosers[t.chosenPath]||0)+1; });
+  return round.paths.map(function(p, i){
+    return '<div class="path-info-card glass">' +
+      '<div class="top-row">' +
+        '<span class="num-badge">Путь '+(i+1)+'</span>' +
+        '<span class="pts-bubble"><b>'+p.points+'</b><span>'+ptsWord(p.points)+'</span></span>' +
+      '</div>' +
+      '<div class="lbl">'+escapeHtml(p.label)+'</div>' +
+      '<div class="choosers">выбрали: '+(choosers[p.id]||0)+' команд</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* Центр стола — одно «окно» этапа за раз (рандомайзер → играющая команда →
+   пути → розыгрыш → итоги), а не все шаги разом: так всегда понятно, что
+   сейчас происходит и что нужно сделать ведущему. */
+function renderCenterPanel(){
+  var round = currentRound();
+  var cp = document.getElementById('centerPanel');
+  var resolved = G.resolvedRounds.some(function(r){ return r.roundId === round.id; });
+  if (!G.flowStage) G.flowStage = defaultFlowStage(round); // страховка для старых сохранений без flowStage
+
+  // заголовок теперь — «Раунд N · Название», без отдельного подстрочника «раунд X из Y»
+  // (слово вместо «раунда» из настроек по-прежнему подставляется сюда)
+  var html = '<div class="round-name">'+capitalize(G.roundWord||'раунд')+' '+(G.currentRoundIndex+1)+' · '+escapeHtml(round.name)+'</div>';
+
+  if (resolved){
+    // окно 5: итоги раунда — таблица и переход дальше
+    var last = G.resolvedRounds[G.resolvedRounds.length-1];
+    html += '<div class="step-badge">✅ Раунд разыгран</div>';
+    html += '<div class="cp-table-wrap">' + roundSummaryTableHtml(last) + '</div>';
+    html += '<div class="actions-row" style="margin-top:4px;">';
+    if (G.currentRoundIndex < G.roundsConfig.length - 1){
+      html += '<button class="glass-btn primary" data-action="next-round">Следующий раунд →</button>';
+    } else {
+      html += '<button class="glass-btn primary" data-action="finish-game">Завершить игру</button>';
+    }
+    html += '</div>';
+    cp.innerHTML = html;
+    return;
+  }
+
+  var info = stepInfo(round);
+
+  if (G.flowStage === 'randomize'){
+    // окно 1
+    html += stageHintHtml('🎲', info, 'Пришло время случайным образом выбрать играющую команду.');
+    html += '<div class="cp-block"><div class="actions-row"><button class="glass-btn primary" data-action="randomize">Рандомайзер</button></div></div>';
+
+  } else if (G.flowStage === 'team'){
+    // окно 2 — играющая команда
+    var pt = teamById(G.playingTeamId);
+    var ptName = escapeHtml(pt?pt.name:'');
+    html += '<div class="cp-block">' +
+      '<div class="playing-of">'+ptName+'</div>' +
+      stageHintHtml('🚪', info, 'Просим команду «'+ptName+'» покинуть игровой зал на время выбора пути.') +
+      '<div class="actions-row"><button class="glass-btn primary" data-action="goto-paths">К путям</button></div>' +
+    '</div>';
+
+  } else if (G.flowStage === 'paths'){
+    // окно 3 — демонстрация путей раунда
+    var chosenCount = pathsChosenCount(round);
+    var totalChoosers = round.type === 'final' ? G.teams.length : G.teams.length - 1;
+    // комментарии здесь и далее обращены к игрокам (их можно читать вслух), а не к модератору
+    var comment = round.type === 'final'
+      ? 'Команды, познакомьтесь с путями и выберите свой путь — прямо на своей карточке на игровом поле.'
+      : 'Команды, познакомьтесь с тремя путями раунда и выберите тот, на который, по-вашему, придёт играющая команда.';
+    html += stageHintHtml('🛤️', info, comment);
+    html += '<div class="path-info-grid">' + pathInfoCardsHtml(round) + '</div>';
+    html += '<div class="cp-block">' +
+      '<div class="cp-progress">Выбрали путь: '+chosenCount+' из '+totalChoosers+' команд</div>' +
+      '<div class="actions-row">' +
+        (round.type==='normal' ? '<button class="glass-btn ghost cp-back" data-action="flow-back" data-target="team">← Назад</button>' : '') +
+        '<button class="glass-btn primary" data-action="paths-chosen" '+(chosenCount>=1?'':'disabled')+'>Пути выбраны</button>' +
+      '</div>' +
+    '</div>';
+
+  } else if (G.flowStage === 'resolve'){
+    // окно 4 — розыгрыш. Комментарий и результат теперь в одном блоке (по правке Сашки),
+    // а не в двух отдельных — раньше они визуально выглядели как разные шаги
+    var isFinal = round.type === 'final';
+    var comment = isFinal
+      ? 'Команды, впишите на своих карточках результат вашего пути — от него будет зависеть, чей путь сыграет в этом раунде.'
+      : 'Пришло время играющей команде выполнить игровое задание. От результатов этой игры будет зависеть, чей выбор пути сыграет в этом раунде.';
+    if (!isFinal){
+      var pt2 = teamById(G.playingTeamId);
+      html += '<div class="cp-block">' +
+        stageHintHtml('🏆', info, comment) +
+        '<div class="playing-of small">Результат «'+escapeHtml(pt2?pt2.name:'')+'»</div>' +
+        resultInputHtml(round) +
+      '</div>';
+    } else {
+      html += stageHintHtml('🏆', info, comment);
+    }
+    var noPath = pathsChosenCount(round) === 0;
+    var warnText = noPath ? 'Ни одна команда ещё не выбрала путь — вернитесь назад' :
+      (isFinal ? 'Впишите место хотя бы одной команде на её карточке' : 'Сначала внесите результат раунда выше ↑');
+    html += '<div class="cp-block">' +
+      '<div class="cp-progress cp-warn" id="cpResultWarn" '+(canResolveRound(round)?'style="display:none;"':'')+'>'+warnText+'</div>' +
+      '<div class="actions-row">' +
+        '<button class="glass-btn ghost cp-back" data-action="flow-back" data-target="paths">← Назад</button>' +
+        '<button class="glass-btn primary" data-action="resolve-round" '+(canResolveRound(round)?'':'disabled')+'>'+(isFinal?'Разыграть финал':'Разыграть путь')+'</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  cp.innerHTML = html;
+}
+
+function resultInputHtml(round){
+  if (round.resultType === 'count'){
+    return '<div class="result-input-block">' +
+      '<label>'+escapeHtml(round.resultLabel)+'</label>' +
+      '<input type="number" id="resultValue" min="0" '+(round.resultMax?('max="'+round.resultMax+'"'):'')+' value="'+(G.roundResult.value!=null?G.roundResult.value:'')+'">' +
+    '</div>';
+  }
+  if (round.resultType === 'time'){
+    return '<div class="result-input-block">' +
+      '<label>'+escapeHtml(round.resultLabel)+'</label>' +
+      '<input type="number" id="resultValue" min="0" value="'+(G.roundResult.value!=null?G.roundResult.value:'')+'">' +
+    '</div>';
+  }
+  return '';
+}
+function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+/* ============================================================
+   8. ВЗАИМОДЕЙСТВИЯ НА ПОЛЕ
+   ============================================================ */
+document.getElementById('teamsLayer').addEventListener('click', function(e){
+  var pill = e.target.closest('.pill');
+  if (pill && !pill.classList.contains('locked')){
+    var teamId = pill.dataset.team, pathId = pill.dataset.path;
+    var t = teamById(teamId);
+    if (t.status === 'playing') return; // играющая команда путь не выбирает (кроме финала, где статус playing не выставляется)
+    var wasSelected = t.chosenPath === pathId;
+    t.chosenPath = wasSelected ? null : pathId;
+    if (wasSelected) sfxDeselect(); else sfxSelect();
+    renderRing();
+    renderCenterPanel();
+    persistDebounced();
+    return;
+  }
+});
+document.getElementById('teamsLayer').addEventListener('change', function(e){
+  if (e.target.matches('.avatar-photo-input')){
+    var teamId = e.target.dataset.team;
+    var file = e.target.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){ teamById(teamId).photo = reader.result; renderRing(); persistDebounced(); };
+    reader.readAsDataURL(file);
+  }
+  if (e.target.matches('.final-input')){
+    var tid = e.target.dataset.team;
+    var v = e.target.value === '' ? null : parseInt(e.target.value,10);
+    G.finalResults[tid] = { value:v };
+    updateResolveButtonState();
+    persistDebounced();
+  }
+});
+// живое обновление (не дожидаясь потери фокуса поля) — иначе кнопка «Разыграть финал»
+// оставалась бы неактивной, пока ведущий не кликнет мимо последнего заполненного поля
+document.getElementById('teamsLayer').addEventListener('input', function(e){
+  if (e.target.matches('.final-input')){
+    var tid = e.target.dataset.team;
+    var v = e.target.value === '' ? null : parseInt(e.target.value,10);
+    G.finalResults[tid] = { value:v };
+    updateResolveButtonState();
+    persistDebounced();
+  }
+});
+document.getElementById('teamsLayer').addEventListener('blur', function(e){
+  if (e.target.matches('.name')){
+    var teamId = e.target.dataset.team;
+    teamById(teamId).name = e.target.textContent.trim() || teamById(teamId).name;
+    persistDebounced();
+  }
+}, true);
+
+document.getElementById('centerPanel').addEventListener('click', function(e){
+  var btn = e.target.closest('button'); if (!btn) return;
+  var action = btn.dataset.action;
+  if (action === 'randomize') runRandomizer();
+  else if (action === 'goto-paths'){ G.flowStage = 'paths'; renderCenterPanel(); persistDebounced(); }
+  else if (action === 'paths-chosen'){ if (pathsChosenCount(currentRound())>=1){ G.flowStage = 'resolve'; renderCenterPanel(); persistDebounced(); } }
+  else if (action === 'flow-back'){ G.flowStage = btn.dataset.target; renderCenterPanel(); persistDebounced(); }
+  else if (action === 'open-paths') openPathsModal();
+  else if (action === 'resolve-round') resolveRound();
+  else if (action === 'next-round') nextRound();
+  else if (action === 'finish-game') openFinishGame();
+});
+document.getElementById('centerPanel').addEventListener('input', function(e){
+  if (e.target.id === 'resultValue'){
+    G.roundResult.value = e.target.value === '' ? null : parseFloat(e.target.value);
+    updateResolveButtonState();
+    persistDebounced();
+  }
+});
+document.getElementById('centerPanel').addEventListener('change', function(e){
+  if (e.target.id === 'resultFlag'){
+    G.roundResult.flag = e.target.checked;
+    renderCenterPanel();
+    persistDebounced();
+  }
+});
+
+var randomizerRunning = false;
+function runRandomizer(){
+  var round = currentRound();
+  if (round.type !== 'normal' || G.playingTeamId || randomizerRunning) return;
+  randomizerRunning = true;
+  var pool = G.teams.filter(function(t){ return !t.hasPlayed; });
+  if (pool.length === 0) pool = G.teams.slice(); // если все уже играли — начинаем заново
+  var cards = document.querySelectorAll('[data-team-card]');
+  var ticks = 0, maxTicks = 18, delay = 70;
+  var chosen = pool[Math.floor(Math.random()*pool.length)];
+  function tick(){
+    cards.forEach(function(c){ c.classList.remove('is-playing'); });
+    var flick = pool[Math.floor(Math.random()*pool.length)];
+    var el = document.querySelector('[data-team-card="'+flick.id+'"]');
+    if (el) el.classList.add('is-playing');
+    sfxTick();
+    ticks++;
+    if (ticks < maxTicks){ setTimeout(tick, delay + ticks*4); }
+    else {
+      cards.forEach(function(c){ c.classList.remove('is-playing'); });
+      G.playingTeamId = chosen.id;
+      chosen.status = 'playing';
+      chosen.chosenPath = null;
+      G.roundResult = {value:null, flag:false};
+      G.flowStage = 'team';
+      sfxLand();
+      randomizerRunning = false;
+      renderRing(); renderCenterPanel(); persistDebounced();
+    }
+  }
+  tick();
+}
+
+// отдельная модалка с путями — доступна в любой момент из верхней панели
+// («Пути раунда»), помимо самого окна-этапа «Пути» в центре стола
+function openPathsModal(){
+  var round = currentRound();
+  document.getElementById('modalPathsTitle').textContent = round.name;
+  document.getElementById('pathInfoGrid').innerHTML = pathInfoCardsHtml(round);
+  document.getElementById('modalPaths').hidden = false;
+  sfxOpen();
+}
+
+function resolveRound(){
+  var round = currentRound();
+  if (G.resolvedRounds.some(function(r){ return r.roundId === round.id; })) return;
+  if (!canResolveRound(round)) return; // нужен хотя бы один выбранный путь и внесённый результат
+  // снимок общего результата раунда — resolveNormal() обнуляет G.roundResult в конце,
+  // а он нужен для колонки «Ответ команды» в «Итогах раунда»
+  var enteredResultValue = round.type !== 'final' ? G.roundResult.value : null;
+  var breakdown = round.type === 'final' ? resolveFinal(round) : resolveNormal(round);
+  G.resolvedRounds.push({ roundId: round.id, roundName: round.name, breakdown: breakdown, roundResultValue: enteredResultValue });
+  // прибавка баллов показывается прямо в поле баллов карточки (старое значение + зелёная/красная
+  // прибавка) 10 секунд — так уведомления соседних карточек никогда не наезжают друг на друга
+  breakdown.forEach(function(b){
+    if (b.role !== 'none'){
+      var t = teamById(b.teamId);
+      if (t) pointsFlash[b.teamId] = { old: t.points - b.gain, gain: b.gain };
+    }
+  });
+  showToasts(breakdown);
+  renderRing(); renderCenterPanel(); persistGame();
+}
+
+function resolveNormal(round){
+  var winMap = {};
+  round.paths.forEach(function(p){ winMap[p.id] = evalCond(p.cond, G.roundResult); });
+  var choosersCount = {};
+  round.paths.forEach(function(p){ choosersCount[p.id] = 0; });
+  G.teams.forEach(function(t){
+    if (t.id !== G.playingTeamId && t.chosenPath) choosersCount[t.chosenPath] = (choosersCount[t.chosenPath]||0) + 1;
+  });
+
+  var breakdown = [];
+  G.teams.forEach(function(t){
+    var role, chosenPathId = t.chosenPath, won = null, base = 0, bonusUnique = false, bonusStreak = null;
+
+    if (t.id === G.playingTeamId){
+      role = 'playing';
+      var maxPts = 0, anyWin = false;
+      round.paths.forEach(function(p){ if (winMap[p.id]){ anyWin = true; maxPts = Math.max(maxPts, p.points); } });
+      base = maxPts; won = anyWin; chosenPathId = null;
+      // нейтральный раунд для серии — счётчики не трогаем
+    } else if (chosenPathId){
+      role = 'chooser';
+      var p = round.paths.find(function(pp){ return pp.id === chosenPathId; });
+      won = !!winMap[chosenPathId];
+      base = won ? p.points : 0;
+      if (won && choosersCount[chosenPathId] === 1){ bonusUnique = true; base = base * 2; }
+      if (won){
+        t.streak.win += 1; t.streak.loss = 0;
+        if (t.streak.win >= 3){ bonusStreak = 'win'; t.points += 1; t.streak.win = 0; }
+      } else {
+        t.streak.loss += 1; t.streak.win = 0;
+        if (t.streak.loss >= 3){ bonusStreak = 'loss'; t.points += 1; t.streak.loss = 0; }
+      }
+    } else {
+      role = 'none';
+    }
+
+    t.points += base;
+    t.lastGain = base + (bonusStreak ? 1 : 0);
+    var chosenPathLabel = (role === 'chooser' && chosenPathId) ? (round.paths.find(function(pp){ return pp.id === chosenPathId; })||{}).label : null;
+    breakdown.push({ teamId:t.id, teamName:t.name, role:role, chosenPathId:chosenPathId, chosenPathLabel:chosenPathLabel, won:won, base:base, bonusUnique:bonusUnique, bonusStreak:bonusStreak, gain:t.lastGain });
+  });
+
+  // закрыть раунд
+  var pt = teamById(G.playingTeamId);
+  if (pt){ pt.status = 'played'; pt.hasPlayed = true; }
+  G.teams.forEach(function(t){ if (t.id !== G.playingTeamId){ t.chosenPath = null; if (t.status!=='played') t.status='idle'; } });
+  G.playingTeamId = null;
+  G.roundResult = {value:null, flag:false};
+  return breakdown;
+}
+
+function resolveFinal(round){
+  var choosersCount = {};
+  round.paths.forEach(function(p){ choosersCount[p.id] = 0; });
+  G.teams.forEach(function(t){ if (t.chosenPath) choosersCount[t.chosenPath] = (choosersCount[t.chosenPath]||0)+1; });
+
+  var breakdown = [];
+  G.teams.forEach(function(t){
+    var result = G.finalResults[t.id] || {value:null};
+    var chosenPathId = t.chosenPath, base = 0, won = null, bonusUnique = false;
+    if (chosenPathId){
+      var p = round.paths.find(function(pp){ return pp.id === chosenPathId; });
+      won = evalCond(p.cond, result);
+      base = won ? p.points : 0;
+      if (won && choosersCount[chosenPathId] === 1){ bonusUnique = true; base = base * 2; }
+    }
+    t.points += base;
+    t.lastGain = base;
+    var chosenPathLabel = chosenPathId ? (round.paths.find(function(pp){ return pp.id === chosenPathId; })||{}).label : null;
+    breakdown.push({ teamId:t.id, teamName:t.name, role:'self', chosenPathId:chosenPathId, chosenPathLabel:chosenPathLabel, resultValue: result.value, won:won, base:base, bonusUnique:bonusUnique, bonusStreak:null, gain:base });
+  });
+  return breakdown;
+}
+
+// грубая оценка ширины плашки-уведомления в «координатах сцены» (те же px, что
+// в CSS .toast, независимо от текущего масштаба экрана) — нужна только для того,
+// чтобы развести две соседние плашки, если они всё равно пересеклись по горизонтали
+function estimateToastWidth(text, compact){
+  var fontSize = compact ? 10.5 : 12.5;
+  var padX = compact ? 9 : 13;
+  if (!estimateToastWidth._ctx) estimateToastWidth._ctx = document.createElement('canvas').getContext('2d');
+  estimateToastWidth._ctx.font = '600 '+fontSize+'px Inter, sans-serif';
+  return estimateToastWidth._ctx.measureText(text).width + padX*2 + 4;
+}
+// разводим плашки, которые всё равно пересеклись (и по горизонтали в одном ряду,
+// и по вертикали — например, у двух карточек, стоящих плотно друг над другом в
+// боковой колонке при 21–25 командах, «нижнее» и «верхнее» уведомления сходятся
+// в узкую щель между карточками) — минимальное смещение по той оси, где
+// пересечение меньше, та же идея, что и resolveCardCollisions для самих карточек
+function resolveToastCollisions(placed){
+  for (var iter=0; iter<8; iter++){
+    var moved = false;
+    for (var i=0;i<placed.length;i++){
+      for (var j=i+1;j<placed.length;j++){
+        var a=placed[i], b=placed[j];
+        var dx = b.x-a.x, dy = b.y-a.y;
+        var overlapX = (a.w+b.w)/2 - Math.abs(dx), overlapY = (a.h+b.h)/2 - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0){
+          moved = true;
+          if (overlapX < overlapY){
+            var pushX = overlapX/2 + 0.5, signX = dx>0?1:(dx<0?-1:1);
+            a.x -= signX*pushX; b.x += signX*pushX;
+          } else {
+            var pushY = overlapY/2 + 0.5, signY = dy>0?1:(dy<0?-1:1);
+            a.y -= signY*pushY; b.y += signY*pushY;
+          }
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  placed.forEach(function(p){
+    p.el.style.left = p.x + 'px';
+    // p.y хранит геометрический центр плашки — переводим обратно в «top» с учётом того,
+    // с какого края плашка примагничена к карточке (above/below)
+    p.el.style.top = (p.above ? (p.y + p.h/2) : (p.y - p.h/2)) + 'px';
+  });
+}
+function showToasts(breakdown){
+  var layer = document.getElementById('toastLayer');
+  layer.innerHTML = '';
+  var relevant = breakdown.filter(function(b){ return b.role !== 'none'; });
+  var anyWin = false, anyLose = false;
+  var placed = [];
+  relevant.forEach(function(b, i){
+    var pos = lastTeamPositions[b.teamId];
+    if (!pos) return;
+    if (b.won) anyWin = true; else anyLose = true;
+    var el = document.createElement('div');
+    el.className = 'toast glass ' + (b.won ? 'win' : 'lose');
+    // баллы теперь показываются прямо на карточке (см. pointsFlash/ptsHtml) — здесь только
+    // словесный комментарий по пути, чтобы уведомление оставалось коротким и не наезжало на соседние
+    var parts = [b.won ? 'путь сыграл' : 'не сыграл'];
+    if (b.role === 'playing') parts.push('играющая');
+    if (b.bonusUnique) parts.push('×2 уникальный');
+    if (b.bonusStreak === 'win') parts.push('серия +1');
+    if (b.bonusStreak === 'loss') parts.push('утешительный +1');
+    var text = parts.join(' · ');
+    el.textContent = text;
+    if (pos.compact) el.classList.add('compact'); // короче плашка — меньше риск наложения при большом числе карточек
+    // «примагничено» впритык к краю своей карточки, без зазора — чтобы при плотной
+    // раскладке (25 команд) было однозначно видно, какому уведомлению принадлежит карточка
+    // (правка Сашки: «нахлест уведомлений», раньше был свободный отступ 92–112px)
+    var vOffset = pos.compact ? (CARD_DIMS.compact.h/2) : (CARD_DIMS.full.h/2);
+    var isAbove = pos.y > CY; // карточки нижней половины кольца — уведомление сверху, иначе снизу видно не будет
+    var h = pos.compact ? 24 : 29;
+    el.classList.add(isAbove ? 'above' : 'below');
+    var top = isAbove ? (pos.y - vOffset) : (pos.y + vOffset); // край плашки впритык к краю карточки
+    var cy = isAbove ? (top - h/2) : (top + h/2); // геометрический центр плашки — нужен только для развода коллизий ниже
+    el.style.left = pos.x + 'px';
+    el.style.top = top + 'px';
+    el.style.animationDelay = (i*0.03)+'s';
+    layer.appendChild(el);
+    placed.push({ el:el, x:pos.x, y:cy, w:estimateToastWidth(text, pos.compact), h:h, above:isAbove });
+  });
+  resolveToastCollisions(placed);
+  var cards = document.querySelectorAll('[data-team-card]');
+  breakdown.forEach(function(b){
+    var el = document.querySelector('[data-team-card="'+b.teamId+'"]');
+    if (el && b.role !== 'none') el.classList.add(b.won ? 'win-flash' : 'lose-flash');
+  });
+  if (anyWin) sfxWin(); else if (anyLose) sfxLose();
+  setTimeout(function(){
+    document.getElementById('toastLayer').innerHTML = '';
+    document.querySelectorAll('[data-team-card]').forEach(function(el){ el.classList.remove('win-flash','lose-flash'); });
+    // снимаем прибавку баллов — карточка возвращается к обычному «итог, б.»
+    breakdown.forEach(function(b){
+      delete pointsFlash[b.teamId];
+      var ptsEl = document.querySelector('[data-team-card="'+b.teamId+'"] .pts');
+      var t = teamById(b.teamId);
+      if (ptsEl && t) ptsEl.innerHTML = ptsHtml(t);
+    });
+  }, 10000);
+}
+
+function nextRound(){
+  if (G.currentRoundIndex < G.roundsConfig.length - 1){
+    G.currentRoundIndex += 1;
+    G.playingTeamId = null;
+    G.roundResult = {value:null, flag:false};
+    G.finalResults = {};
+    G.teams.forEach(function(t){ t.chosenPath = null; if (t.status !== 'played') t.status = 'idle'; else t.status='idle'; });
+    G.flowStage = defaultFlowStage(currentRound());
+    renderRing(); renderCenterPanel(); persistGame();
+  }
+}
+
+/* ============================================================
+   9. МОДАЛКИ: ИТОГИ / ЛИДЕРБОРД / НАСТРОЙКИ
+   ============================================================ */
+// таблица «Итоги раунда» — общая и для окна 5 в центре стола, и для модалки «Итоги раунда» из верхней панели
+function roundSummaryTableHtml(entry){
+  return '<table class="breakdown-table"><thead><tr><th>Команда</th><th>Роль</th><th>Ответы команд</th><th>Результат</th><th>Баллы</th></tr></thead><tbody>' +
+    entry.breakdown.map(function(b){
+      var roleTxt = b.role==='playing' ? 'играющая' : (b.role==='self' ? 'путь на себя' : (b.role==='chooser' ? 'выбрала путь' : '—'));
+      var tag = b.role==='none' ? '' : ('<span class="tag '+(b.won?'win':'lose')+'">'+(b.won?'путь сыграл':'не сыграл')+'</span>' +
+        (b.bonusUnique?'<span class="tag bonus">×2 уникальный</span>':'') +
+        (b.bonusStreak==='win'?'<span class="tag bonus">серия +1</span>':'') +
+        (b.bonusStreak==='loss'?'<span class="tag bonus">утешительный +1</span>':''));
+      var answerTxt;
+      if (b.role === 'playing'){
+        answerTxt = (entry.roundResultValue!=null ? escapeHtml(String(entry.roundResultValue)) : '—');
+      } else if (b.role === 'chooser'){
+        answerTxt = b.chosenPathLabel ? escapeHtml(b.chosenPathLabel) : '—';
+      } else if (b.role === 'self'){
+        var parts = [];
+        if (b.chosenPathLabel) parts.push(escapeHtml(b.chosenPathLabel));
+        if (b.resultValue != null) parts.push('результат: ' + escapeHtml(String(b.resultValue)));
+        answerTxt = parts.length ? parts.join(' · ') : '—';
+      } else {
+        answerTxt = '—';
+      }
+      return '<tr><td>'+escapeHtml(b.teamName)+'</td><td>'+roleTxt+'</td><td>'+answerTxt+'</td><td>'+tag+'</td><td style="font-family:var(--mono);">'+(b.gain>=0?'+':'')+b.gain+'</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function openSummaryModal(){
+  var last = G.resolvedRounds[G.resolvedRounds.length-1];
+  var body = document.getElementById('modalSummaryBody');
+  if (!last){ body.innerHTML = '<div class="empty-note">Раунд ещё не разыгран.</div>'; }
+  else {
+    document.getElementById('modalSummaryTitle').textContent = 'Итоги: ' + last.roundName;
+    body.innerHTML = roundSummaryTableHtml(last);
+  }
+  document.getElementById('modalSummary').hidden = false;
+  sfxOpen();
+}
+
+function openFinishGame(){
+  renderLeaderboardModal(false);
+  document.getElementById('modalLeaderboard').hidden = false;
+  sfxOpen();
+}
+function renderLeaderboardModal(readOnly){
+  var sorted = G.teams.slice().sort(function(a,b){ return b.points - a.points; });
+  document.getElementById('leaderboardBody').innerHTML = sorted.map(function(t, i){
+    return '<div class="leaderboard-row"><div class="rank">'+(i+1)+'</div><div class="lname">'+escapeHtml(t.name)+'</div>' +
+      '<div class="lpts">'+t.points+' б.</div></div>';
+  }).join('');
+  document.getElementById('btnFinalizeGame').style.display = readOnly ? 'none' : '';
+}
+document.getElementById('btnFinalizeGame').addEventListener('click', function(){
+  G.status = 'completed';
+  persistGame();
+  closeModals();
+  alert('Игра сохранена в историю.');
+  backToMenu();
+});
+
+function openSettingsModal(){
+  document.getElementById('settingRoundWord').value = G.roundWord || 'раунд';
+  document.getElementById('settingGameName').value = G.name;
+  renderRoundsConstructor();
+  document.getElementById('modalSettings').hidden = false;
+  sfxOpen();
+}
+function renderRoundsConstructor(){
+  var el = document.getElementById('roundsConstructor');
+  el.innerHTML = G.roundsConfig.map(function(r, ri){
+    return '<div class="rc-round glass">' +
+      '<div class="rc-round-head" data-toggle="'+ri+'">' +
+        '<span class="t">'+(ri+1)+'. '+escapeHtml(r.name)+' '+(r.type==='final'?'(финал)':'')+'</span>' +
+        '<span class="rc-head-actions">' +
+          (r.type!=='final' ? '<button type="button" class="rc-del" data-del="'+ri+'" title="Удалить раунд">✕</button>' : '') +
+          '<span>▾</span>' +
+        '</span>' +
+      '</div>' +
+      '<div class="rc-round-body" id="rc-body-'+ri+'" hidden>' +
+        '<div class="field-row"><label>Название раунда</label><input type="text" data-r="'+ri+'" data-f="name" value="'+escapeHtml(r.name)+'"></div>' +
+        (r.type!=='final' ? '<div class="field-row"><label>Подпись поля результата (что вводит модератор)</label><input type="text" data-r="'+ri+'" data-f="resultLabel" value="'+escapeHtml(r.resultLabel||'')+'"></div>' : '') +
+        r.paths.map(function(p, pi){ return renderPathRow(ri, pi, p); }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+// добавить собственный раунд вручную — по просьбе Сашки. Новый раунд вставляется
+// перед финальным (если он последний в списке), чтобы финал всегда оставался
+// последним раундом игры; пути/ставки в нём сразу редактируемы как у любого раунда.
+function addCustomRound(){
+  var insertAt = G.roundsConfig.length;
+  if (insertAt > 0 && G.roundsConfig[insertAt-1].type === 'final') insertAt -= 1;
+  var newRound = {
+    id: uid('rnd'), type:'normal', name:'Новый раунд', resultType:'count', resultLabel:'Результат раунда', resultMax:null,
+    paths:[
+      {id:uid('p'), label:'Путь 1 — впишите условие', points:2, cond:{type:'range', min:0, max:0}},
+      {id:uid('p'), label:'Путь 2 — впишите условие', points:2, cond:{type:'range', min:0, max:0}},
+      {id:uid('p'), label:'Путь 3 — впишите условие', points:3, cond:{type:'range', min:0, max:0}},
+    ]
+  };
+  G.roundsConfig.splice(insertAt, 0, newRound);
+  renderRoundsConstructor();
+  var body = document.getElementById('rc-body-'+insertAt);
+  if (body) body.hidden = false;
+}
+function deleteRound(ri){
+  var r = G.roundsConfig[ri];
+  if (!r || r.type === 'final') return;
+  if (G.roundsConfig.filter(function(x){ return x.type!=='final'; }).length <= 1){
+    alert('В игре должен остаться хотя бы один обычный раунд.');
+    return;
+  }
+  if (!confirm('Удалить раунд «'+r.name+'»? Действие необратимо (если раунд уже разыгран в текущей игре, его итоги останутся в истории, но выбрать его заново будет нельзя).')) return;
+  G.roundsConfig.splice(ri, 1);
+  renderRoundsConstructor();
+}
+function renderPathRow(ri, pi, p){
+  var condType = p.cond.type;
+  var params = '';
+  if (condType === 'range'){
+    params = '<div class="rc-cond-params"><input type="number" placeholder="от" data-r="'+ri+'" data-p="'+pi+'" data-cf="min" value="'+(p.cond.min!=null?p.cond.min:'')+'">' +
+      '<input type="number" placeholder="до" data-r="'+ri+'" data-p="'+pi+'" data-cf="max" value="'+(p.cond.max!=null?p.cond.max:'')+'"></div>';
+  } else if (condType === 'min' || condType === 'max' || condType === 'exact'){
+    params = '<div class="rc-cond-params"><input type="number" placeholder="значение" data-r="'+ri+'" data-p="'+pi+'" data-cf="value" value="'+(p.cond.value!=null?p.cond.value:'')+'"></div>';
+  } else if (condType === 'parity'){
+    params = '<select data-r="'+ri+'" data-p="'+pi+'" data-cf="value"><option value="even" '+(p.cond.value==='even'?'selected':'')+'>чётное</option><option value="odd" '+(p.cond.value==='odd'?'selected':'')+'>нечётное</option></select>';
+  } else {
+    params = '<span class="hint">без параметров</span>';
+  }
+  return '<div class="rc-path-row">' +
+    '<input type="text" data-r="'+ri+'" data-p="'+pi+'" data-pf="label" value="'+escapeHtml(p.label)+'" placeholder="Текст пути">' +
+    '<input type="number" data-r="'+ri+'" data-p="'+pi+'" data-pf="points" value="'+p.points+'" placeholder="баллы">' +
+    '<select data-r="'+ri+'" data-p="'+pi+'" data-cf="type">' +
+      ['range','min','max','parity','exact','flag'].map(function(ct){ return '<option value="'+ct+'" '+(ct===condType?'selected':'')+'>'+condTypeLabel(ct)+'</option>'; }).join('') +
+    '</select>' +
+    params +
+  '</div>';
+}
+function condTypeLabel(t){
+  return {range:'диапазон', min:'не менее', max:'не более', parity:'чётность', exact:'точное значение', flag:'спец.флаг'}[t] || t;
+}
+document.getElementById('roundsConstructor').addEventListener('click', function(e){
+  var del = e.target.closest('[data-del]');
+  if (del){ deleteRound(parseInt(del.dataset.del, 10)); return; }
+  var head = e.target.closest('.rc-round-head');
+  if (head){
+    var body = document.getElementById('rc-body-'+head.dataset.toggle);
+    body.hidden = !body.hidden;
+  }
+});
+document.querySelector('[data-action="add-round"]').addEventListener('click', addCustomRound);
+document.getElementById('roundsConstructor').addEventListener('change', function(e){
+  var t = e.target;
+  if (t.dataset.f === 'name'){ G.roundsConfig[t.dataset.r].name = t.value; }
+  if (t.dataset.f === 'resultLabel'){ G.roundsConfig[t.dataset.r].resultLabel = t.value; }
+  if (t.dataset.pf){ G.roundsConfig[t.dataset.r].paths[t.dataset.p][t.dataset.pf] = t.dataset.pf==='points' ? parseFloat(t.value)||0 : t.value; }
+  if (t.dataset.cf){
+    var path = G.roundsConfig[t.dataset.r].paths[t.dataset.p];
+    if (t.dataset.cf === 'type'){
+      var newType = t.value;
+      path.cond = newType === 'range' ? {type:'range', min:0, max:0} :
+                  (newType === 'parity' ? {type:'parity', value:'even'} :
+                  (newType === 'flag' ? {type:'flag'} : {type:newType, value:0}));
+      renderRoundsConstructor();
+      document.getElementById('rc-body-'+t.dataset.r).hidden = false;
+      return;
+    } else {
+      var v = t.value === '' ? null : parseFloat(t.value);
+      path.cond[t.dataset.cf] = isNaN(v) ? t.value : v;
+    }
+  }
+});
+document.querySelectorAll('.tabs button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tabGeneral').hidden = btn.dataset.tab !== 'general';
+    document.getElementById('tabRounds').hidden = btn.dataset.tab !== 'rounds';
+  });
+});
+document.querySelector('[data-action="save-settings"]').addEventListener('click', function(){
+  G.roundWord = document.getElementById('settingRoundWord').value.trim() || 'раунд';
+  G.name = document.getElementById('settingGameName').value.trim() || G.name;
+  persistGame();
+  closeModals();
+  document.getElementById('boardGameName').textContent = G.name;
+  renderRing(); renderCenterPanel();
+});
+document.querySelector('[data-action="reset-rounds"]').addEventListener('click', function(){
+  if (confirm('Вернуть заводские названия/пути всех раундов? Текущие результаты игры не тронутся.')){
+    G.roundsConfig = defaultRounds().map(function(nr, i){
+      // сохраняем id уже сыгранных раундов, чтобы не потерять историю resolvedRounds
+      if (G.roundsConfig[i]) nr.id = G.roundsConfig[i].id;
+      return nr;
+    });
+    renderRoundsConstructor();
+  }
+});
+
+/* ============================================================
+   10. ГЛОБАЛЬНЫЕ ДЕЙСТВИЯ / НАВИГАЦИЯ
+   ============================================================ */
+function backToMenu(){ G = null; showScreen('screen-menu'); }
+
+document.addEventListener('click', function(e){
+  if (e.target.closest('button')) sfxClick();
+}, true);
+
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-action]');
+  if (!el) return;
+  var a = el.dataset.action;
+  if (a === 'new-game') openWizard();
+  else if (a === 'saved-games') openSavedGames();
+  else if (a === 'history') openHistory();
+  else if (a === 'close-wizard') showScreen('screen-menu');
+  else if (a === 'close-panel') showScreen('screen-menu');
+  else if (a === 'to-menu') { persistGame(); stopGameTimer(); backToMenu(); }
+  else if (a === 'open-summary') openSummaryModal();
+  else if (a === 'open-paths') openPathsModal();
+  else if (a === 'open-settings') openSettingsModal();
+  else if (a === 'finish-game') openFinishGame();
+  else if (a === 'download-game') downloadGame();
+  else if (a === 'close-modal') closeModals();
+});
+document.querySelectorAll('.modal-backdrop').forEach(function(mb){
+  mb.addEventListener('click', function(e){ if (e.target === mb) closeModals(); });
+});
+
+function downloadGame(){
+  var blob = new Blob([JSON.stringify(G, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'igra-' + (G.name||'igra').replace(/[^a-zA-Zа-яА-Я0-9 _-]/g,'').trim().replace(/\s+/g,'_') + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ============================================================
+   11. ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ ЭКРАНА (12.1 ТЗ)
+   ============================================================ */
+var stageOuter = document.getElementById('stageOuter');
+var stageEl = document.getElementById('stage');
+function fitStage(){
+  var w = stageOuter.clientWidth, h = stageOuter.clientHeight;
+  var scale = Math.min(w/1920, h/1080);
+  stageEl.style.transform = 'scale(' + scale + ')';
+}
+window.addEventListener('resize', fitStage);
+fitStage();
+
+/* ---------- полноэкранный режим (значок в углу, раздел 12.1 ТЗ) ---------- */
+(function(){
+  var btn = document.getElementById('fullscreenBtn');
+  var docEl = document.documentElement;
+
+  function isFs(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+  }
+  function requestFs(el){
+    if (el.requestFullscreen) return el.requestFullscreen();
+    if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+    if (el.msRequestFullscreen) return el.msRequestFullscreen();
+  }
+  function exitFs(){
+    if (document.exitFullscreen) return document.exitFullscreen();
+    if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+    if (document.msExitFullscreen) return document.msExitFullscreen();
+  }
+  function syncBtn(){
+    var fs = isFs();
+    document.body.classList.toggle('is-fullscreen', fs);
+    btn.title = fs ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим';
+  }
+  btn.addEventListener('click', function(){
+    if (isFs()){ exitFs(); } else { requestFs(docEl); }
+  });
+  ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(function(ev){
+    document.addEventListener(ev, syncBtn);
+  });
+  syncBtn();
+})();
+
+window.addEventListener('wheel', function(e){ if (e.ctrlKey) e.preventDefault(); }, {passive:false});
+window.addEventListener('keydown', function(e){
+  if ((e.ctrlKey || e.metaKey) && ['=','+','-','0'].indexOf(e.key) !== -1) e.preventDefault();
+});
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('contextmenu', function(e){
+  if (!e.target.closest('input,[contenteditable]')) e.preventDefault();
+});
+
+/* ============================================================
+   12. СТАРТ
+   ============================================================ */
+showScreen('screen-menu');
+</script>
+</body>
+</html>
